@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📅 Calendário de Gravações — Queiroz Advogados</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg2: #111111;
+    --bg3: #1a1a1a;
+    --bg4: #222222;
+    --border: #2a2a2a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --noticia: #ef4444;
+    --noticia-bg: rgba(239,68,68,.12);
+    --dica: #22c55e;
+    --dica-bg: rgba(34,197,94,.12);
+    --educativo: #3b82f6;
+    --educativo-bg: rgba(59,130,246,.12);
+    --quebra: #f59e0b;
+    --quebra-bg: rgba(245,158,11,.12);
+    --accent: #2A7E78;
+    --accent2: #3eb8b0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .topbar-logo {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: -.02em;
+    white-space: nowrap;
+  }
+  .topbar-sub {
+    font-size: .8rem;
+    color: var(--muted);
+    border-left: 1px solid var(--border);
+    padding-left: 1rem;
+  }
+  .topbar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: .4rem .9rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .8rem;
+    transition: all .2s;
+  }
+  .btn-reset:hover { border-color: var(--noticia); color: var(--noticia); }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-wrap {
+    background: var(--bg2);
+    padding: .6rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .progress-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: var(--bg4);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 999px;
+    transition: width .4s;
+  }
+  .progress-label { font-size: .8rem; color: var(--accent2); white-space: nowrap; font-weight: 600; }
+
+  /* ─── STATS ROW ─── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .75rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+  }
+  .stat-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .stat-value { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+  .stat-card.total .stat-value { color: var(--accent2); }
+  .stat-card.done .stat-value { color: var(--dica); }
+  .stat-card.pending .stat-value { color: var(--text); }
+  .stat-card.recusa .stat-value { color: var(--noticia); }
+  .stat-card.noticias .stat-value { color: var(--noticia); }
+  .stat-card.dicas .stat-value { color: var(--dica); }
+  .stat-card.educ .stat-value { color: var(--educativo); }
+  .stat-card.quebras .stat-value { color: var(--quebra); }
+
+  /* ─── FILTERS ─── */
+  .filters {
+    padding: .75rem 1.5rem;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
+  }
+  .filter-search {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: .5rem .9rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    outline: none;
+    flex: 1;
+    min-width: 200px;
+    transition: border .2s;
+  }
+  .filter-search:focus { border-color: var(--accent2); }
+  .filter-search::placeholder { color: var(--muted); }
+  .filter-select {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: .5rem .9rem;
+    border-radius: 8px;
+    font-size: .85rem;
+    outline: none;
+    cursor: pointer;
+    transition: border .2s;
+  }
+  .filter-select:focus { border-color: var(--accent2); }
+  .filter-btn {
+    padding: .45rem .9rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 600;
+    transition: all .18s;
+    background: transparent;
+    color: var(--muted);
+  }
+  .filter-btn:hover { background: var(--bg4); color: var(--text); }
+  .filter-btn.active { color: #fff; border-color: transparent; }
+  .filter-btn.f-all.active { background: var(--accent); }
+  .filter-btn.f-noticia.active { background: var(--noticia); }
+  .filter-btn.f-dica.active { background: var(--dica); }
+  .filter-btn.f-educativo.active { background: var(--educativo); }
+  .filter-btn.f-quebra.active { background: var(--quebra); }
+  .filter-btn.f-done.active { background: #16a34a; }
+  .filter-btn.f-pending.active { background: #475569; }
+  .filter-btn.f-recusa.active { background: #b91c1c; }
+
+  /* ─── MAIN GRID ─── */
+  .main {
+    padding: 1.25rem 1.5rem;
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  .month-label {
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    margin: 1.25rem 0 .75rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .month-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: .75rem;
+  }
+
+  /* ─── DAY CARD ─── */
+  .day-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    transition: all .2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .day-card:hover { border-color: #3a3a3a; transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,.4); }
+  .day-card.concluido { opacity: .65; border-color: rgba(34,197,94,.3); }
+  .day-card.concluido::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--dica); }
+  .day-card.recusado { opacity: .55; border-color: rgba(239,68,68,.3); }
+  .day-card.recusado::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--noticia); }
+  .card-stripe { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .card-stripe.noticia { background: var(--noticia); }
+  .card-stripe.dica { background: var(--dica); }
+  .card-stripe.educativo { background: var(--educativo); }
+  .card-stripe.quebra { background: var(--quebra); }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: .6rem;
+  }
+  .card-day-num {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .35rem .55rem;
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--muted);
+    white-space: nowrap;
+    line-height: 1.2;
+    min-width: 52px;
+    text-align: center;
+  }
+  .card-day-num span { display: block; font-size: .65rem; font-weight: 400; color: var(--muted); }
+  .card-id { font-size: .65rem; color: var(--muted); margin-top: .15rem; }
+  .card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    margin-left: auto;
+  }
+  .badge {
+    font-size: .65rem;
+    font-weight: 700;
+    padding: .2rem .5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .badge.noticia { background: var(--noticia-bg); color: var(--noticia); }
+  .badge.dica { background: var(--dica-bg); color: var(--dica); }
+  .badge.educativo { background: var(--educativo-bg); color: var(--educativo); }
+  .badge.quebra { background: var(--quebra-bg); color: var(--quebra); }
+  .badge.formato { background: rgba(255,255,255,.06); color: var(--muted); }
+  .badge.ciclo { background: rgba(62,184,176,.08); color: var(--accent2); }
+
+  .card-lawyer {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .card-lawyer-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .75rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .card-content {
+    font-size: .85rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+    flex: 1;
+  }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .72rem;
+    color: var(--muted);
+  }
+  .card-meta svg { width: 12px; height: 12px; }
+
+  /* ─── STATUS ACTIONS ─── */
+  .card-actions {
+    display: flex;
+    gap: .4rem;
+    margin-top: .25rem;
+  }
+  .btn-status {
+    flex: 1;
+    padding: .4rem;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: .72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .3rem;
+  }
+  .btn-status:hover { background: var(--bg4); color: var(--text); }
+  .btn-status.active-done { background: rgba(34,197,94,.15); border-color: rgba(34,197,94,.4); color: var(--dica); }
+  .btn-status.active-recusa { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: var(--noticia); }
+  .btn-status.active-pending { background: rgba(100,116,139,.15); border-color: rgba(100,116,139,.4); color: #94a3b8; }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 3rem; margin-bottom: .75rem; }
+
+  /* ─── WORKFLOW BOX ─── */
+  .workflow-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin: 1.5rem 0 0;
+  }
+  .workflow-title {
+    font-size: .8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--accent2);
+    margin-bottom: .75rem;
+  }
+  .workflow-steps {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+  }
+  .wstep {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem .85rem;
+    font-size: .78rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .wstep-time { color: var(--accent2); font-weight: 700; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+
+  .no-results { display: none; }
+  .no-results.visible { display: block; }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">⚖️ Queiroz Advogados</div>
+  <div class="topbar-sub">📅 Calendário de Gravações — 23/03 a 30/04/2026</div>
+  <div class="topbar-right">
+    <button class="btn-reset" onclick="resetAll()">🔄 Resetar progresso</button>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="progressLabel">0 / 39 concluídos</div>
+</div>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stat-card total"><div class="stat-label">Total dias</div><div class="stat-value">39</div></div>
+  <div class="stat-card done"><div class="stat-label">✅ Concluídos</div><div class="stat-value" id="statDone">0</div></div>
+  <div class="stat-card pending"><div class="stat-label">⏳ Pendentes</div><div class="stat-value" id="statPending">39</div></div>
+  <div class="stat-card recusa"><div class="stat-label">❌ Recusas</div><div class="stat-value" id="statRecusa">0</div></div>
+  <div class="stat-card noticias"><div class="stat-label">🔴 Notícias</div><div class="stat-value">8</div></div>
+  <div class="stat-card dicas"><div class="stat-label">🟢 Dicas</div><div class="stat-value">10</div></div>
+  <div class="stat-card educ"><div class="stat-label">🔵 Educativos</div><div class="stat-value">18</div></div>
+  <div class="stat-card quebras"><div class="stat-label">🟡 Quebras</div><div class="stat-value">3</div></div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters">
+  <input type="text" class="filter-search" id="searchInput" placeholder="🔍 Buscar por advogado ou conteúdo..." oninput="applyFilters()">
+  <select class="filter-select" id="lawyerSelect" onchange="applyFilters()">
+    <option value="">Todos os advogados</option>
+    <option>Leonardo Minuzzi</option>
+    <option>Gedilson Jacobowski</option>
+    <option>Lucas Hank</option>
+    <option>Carlos Alexandre</option>
+    <option>Filipe Onofre</option>
+    <option>Jacqueline Grando</option>
+    <option>Anderson Comarella</option>
+    <option>Thaimmylly Alves</option>
+    <option>Samuel Gripp</option>
+    <option>Fernanda Miotto</option>
+    <option>Juliana Passarine</option>
+    <option>Samara Rambo</option>
+    <option>Rafaela Ebert</option>
+    <option>Marcos Pizatto</option>
+    <option>Rayka Passarini</option>
+    <option>João Queiroz</option>
+  </select>
+  <button class="filter-btn f-all active" onclick="setTypeFilter('all',this)">Todos</button>
+  <button class="filter-btn f-noticia" onclick="setTypeFilter('noticia',this)">🔴 Notícia</button>
+  <button class="filter-btn f-dica" onclick="setTypeFilter('dica',this)">🟢 Dica</button>
+  <button class="filter-btn f-educativo" onclick="setTypeFilter('educativo',this)">🔵 Educativo</button>
+  <button class="filter-btn f-quebra" onclick="setTypeFilter('quebra',this)">🟡 Quebra</button>
+  <button class="filter-btn f-done" onclick="setStatusFilter('concluido',this)">✅ Feitos</button>
+  <button class="filter-btn f-pending" onclick="setStatusFilter('pendente',this)">⏳ Pendentes</button>
+  <button class="filter-btn f-recusa" onclick="setStatusFilter('recusado',this)">❌ Recusas</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div id="gridMarch" class="month-section">
+    <div class="month-label">🍂 Março 2026</div>
+    <div class="cards-grid" id="cardsMarch"></div>
+  </div>
+  <div id="gridApril" class="month-section">
+    <div class="month-label">🌿 Abril 2026</div>
+    <div class="cards-grid" id="cardsApril"></div>
+  </div>
+  <div class="no-results" id="noResults">
+    <div class="empty-state">
+      <div class="icon">🔍</div>
+      <p>Nenhum dia encontrado com esses filtros.</p>
+    </div>
+  </div>
+
+  <!-- WORKFLOW -->
+  <div class="workflow-box">
+    <div class="workflow-title">⚡ Workflow Diário</div>
+    <div class="workflow-steps">
+      <div class="wstep"><span class="wstep-time">08:50</span> Chegar e preparar (câmera, luz, mic)</div>
+      <div class="wstep"><span class="wstep-time">09:00</span> Iniciar gravação</div>
+      <div class="wstep"><span class="wstep-time">09:00–09:40</span> Gravar conteúdo (máx 2 takes)</div>
+      <div class="wstep"><span class="wstep-time">09:40–10:10</span> Conteúdos extras / testes</div>
+      <div class="wstep"><span class="wstep-time">10:10–10:30</span> Buffer / revisão</div>
+      <div class="wstep"><span class="wstep-time">10:35</span> ✅ Marcar como concluído</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CALENDARIO = [
+  // ========== MARÇO — NOTÍCIAS URGENTES ==========
+  {id:1, data:'23/03', diaSemana:'Dom', mes:'marco', advogado:'Leonardo Minuzzi', conteudo:'Diesel sumiu no RS: O que o produtor rural pode fazer?', tipo:'noticia', formato:'Solo falando', ciclo:1},
+  {id:2, data:'24/03', diaSemana:'Seg', mes:'marco', advogado:'Gedilson Jacobowski', conteudo:'Portos travados por barreiras sanitárias: Como isso afeta o agro?', tipo:'noticia', formato:'Entrevista Ravena', ciclo:1},
+  {id:3, data:'25/03', diaSemana:'Ter', mes:'marco', advogado:'Lucas Hank', conteudo:'Juros crédito rural a 13,5%: O que fazer agora?', tipo:'noticia', formato:'Solo falando', ciclo:1},
+  {id:4, data:'26/03', diaSemana:'Qua', mes:'marco', advogado:'Carlos Alexandre', conteudo:'Inadimplência rural 5,2%: Você faz parte desta estatística?', tipo:'noticia', formato:'2 Advogados', ciclo:1},
+  {id:5, data:'27/03', diaSemana:'Qui', mes:'marco', advogado:'Filipe Onofre', conteudo:'CPR cresceu 39%: Risco ou oportunidade para o produtor?', tipo:'noticia', formato:'Solo falando', ciclo:1},
+  {id:6, data:'28/03', diaSemana:'Sex', mes:'marco', advogado:'Jacqueline Grando', conteudo:'Selic a 15%: Como isso impacta sua dívida rural?', tipo:'noticia', formato:'Entrevista Ravena', ciclo:1},
+  {id:7, data:'29/03', diaSemana:'Sáb', mes:'marco', advogado:'Anderson Comarella', conteudo:'Fertilizantes a US$ 344/ton: O produtor endividado tem saída?', tipo:'noticia', formato:'Solo falando', ciclo:1},
+  {id:8, data:'30/03', diaSemana:'Dom', mes:'marco', advogado:'Thaimmylly Alves', conteudo:'Clima irregular no MS: Como proteger sua fazenda juridicamente?', tipo:'noticia', formato:'2 Advogados', ciclo:1},
+  {id:9, data:'31/03', diaSemana:'Seg', mes:'marco', advogado:'Samuel Gripp', conteudo:'4 erros comuns do produtor endividado (e como evitar)', tipo:'dica', formato:'Solo falando', ciclo:1},
+
+  // ========== ABRIL — CICLO 1 ==========
+  {id:10, data:'01/04', diaSemana:'Ter', mes:'abril', advogado:'Fernanda Miotto', conteudo:'5 dicas para proteger sua propriedade rural', tipo:'dica', formato:'Solo falando', ciclo:1},
+  {id:11, data:'02/04', diaSemana:'Qua', mes:'abril', advogado:'Juliana Passarine', conteudo:'3 coisas que o banco não te conta sobre sua dívida', tipo:'dica', formato:'Entrevista Ravena', ciclo:1},
+  {id:12, data:'03/04', diaSemana:'Qui', mes:'abril', advogado:'Samara Rambo', conteudo:'5 sinais de que você precisa prorrogar agora', tipo:'dica', formato:'Solo falando', ciclo:1},
+  {id:13, data:'04/04', diaSemana:'Sex', mes:'abril', advogado:'Rafaela Ebert', conteudo:'5 cláusulas abusivas em contratos rurais', tipo:'dica', formato:'Solo falando', ciclo:1},
+  {id:14, data:'05/04', diaSemana:'Sáb', mes:'abril', advogado:'Marcos Pizatto', conteudo:'Defesa preventiva: quando fazer antes de ser cobrado', tipo:'dica', formato:'2 Advogados', ciclo:1},
+  {id:15, data:'06/04', diaSemana:'Dom', mes:'abril', advogado:'Rayka Passarini', conteudo:'Renegociar vs Prorrogar: entenda a diferença definitivamente', tipo:'educativo', formato:'Solo falando', ciclo:1},
+  {id:16, data:'07/04', diaSemana:'Seg', mes:'abril', advogado:'João Queiroz', conteudo:'Como funciona a Justiça Gratuita para produtor rural', tipo:'educativo', formato:'Entrevista Ravena', ciclo:1},
+
+  // ========== ABRIL — CICLO 2 ==========
+  {id:17, data:'08/04', diaSemana:'Ter', mes:'abril', advogado:'Leonardo Minuzzi', conteudo:'Documentos necessários para montar sua defesa rural', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:18, data:'09/04', diaSemana:'Qua', mes:'abril', advogado:'Gedilson Jacobowski', conteudo:'Diferença entre execução de dívida e prorrogação', tipo:'educativo', formato:'2 Advogados', ciclo:2},
+  {id:19, data:'10/04', diaSemana:'Qui', mes:'abril', advogado:'Lucas Hank', conteudo:'Como suspender o leilão da sua propriedade', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:20, data:'11/04', diaSemana:'Sex', mes:'abril', advogado:'Carlos Alexandre', conteudo:'Por que o avalista também é protegido pela lei', tipo:'educativo', formato:'Entrevista Ravena', ciclo:2},
+  {id:21, data:'12/04', diaSemana:'Sáb', mes:'abril', advogado:'Filipe Onofre', conteudo:'Safra frustrada dá direito a quê? A lei explica', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:22, data:'13/04', diaSemana:'Dom', mes:'abril', advogado:'Jacqueline Grando', conteudo:'Quanto tempo tenho antes do leilão começar?', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:23, data:'14/04', diaSemana:'Seg', mes:'abril', advogado:'Anderson Comarella', conteudo:'Banco pode tomar maquinário? Entenda seus direitos', tipo:'educativo', formato:'2 Advogados', ciclo:2},
+  {id:24, data:'15/04', diaSemana:'Ter', mes:'abril', advogado:'Thaimmylly Alves', conteudo:'Como calcular a capacidade real de pagamento', tipo:'educativo', formato:'Entrevista Ravena', ciclo:2},
+  {id:25, data:'16/04', diaSemana:'Qua', mes:'abril', advogado:'Samuel Gripp', conteudo:'3 tipos de garantia que o banco exige e o que cada uma significa', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:26, data:'17/04', diaSemana:'Qui', mes:'abril', advogado:'Fernanda Miotto', conteudo:'Posso plantar com dívida vencida? Resposta jurídica', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:27, data:'18/04', diaSemana:'Sex', mes:'abril', advogado:'Juliana Passarine', conteudo:'3 mitos sobre dívida rural que você acredita (e que são mentira)', tipo:'quebra', formato:'Solo falando', ciclo:2},
+  {id:28, data:'19/04', diaSemana:'Sáb', mes:'abril', advogado:'Samara Rambo', conteudo:'Por que renegociação sem advogado piora sua dívida', tipo:'quebra', formato:'Entrevista Ravena', ciclo:2},
+  {id:29, data:'20/04', diaSemana:'Dom', mes:'abril', advogado:'Rafaela Ebert', conteudo:'O que é PRONAMP e como pode te ajudar?', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:30, data:'21/04', diaSemana:'Seg', mes:'abril', advogado:'Marcos Pizatto', conteudo:'Parcelamento especial rural: como funciona e quem pode usar', tipo:'educativo', formato:'2 Advogados', ciclo:2},
+  {id:31, data:'22/04', diaSemana:'Ter', mes:'abril', advogado:'Rayka Passarini', conteudo:'Quando vale a pena ir à Justiça contra o banco?', tipo:'educativo', formato:'Solo falando', ciclo:2},
+  {id:32, data:'23/04', diaSemana:'Qua', mes:'abril', advogado:'João Queiroz', conteudo:'Seguro rural: o produtor tem esse direito mesmo sem contratar?', tipo:'educativo', formato:'Entrevista Ravena', ciclo:2},
+
+  // ========== ABRIL — CICLO 3 (parcial) ==========
+  {id:33, data:'24/04', diaSemana:'Qui', mes:'abril', advogado:'Leonardo Minuzzi', conteudo:'Como a lei de Zoneamento Agrícola pode proteger sua propriedade', tipo:'dica', formato:'Solo falando', ciclo:3},
+  {id:34, data:'25/04', diaSemana:'Sex', mes:'abril', advogado:'Gedilson Jacobowski', conteudo:'5 perguntas que todo produtor deve fazer ao banco antes de assinar', tipo:'dica', formato:'2 Advogados', ciclo:3},
+  {id:35, data:'26/04', diaSemana:'Sáb', mes:'abril', advogado:'Lucas Hank', conteudo:'O que acontece se eu ignorar a cobrança do banco?', tipo:'quebra', formato:'Solo falando', ciclo:3},
+  {id:36, data:'27/04', diaSemana:'Dom', mes:'abril', advogado:'Carlos Alexandre', conteudo:'Como funciona a penhora de safra futura', tipo:'educativo', formato:'Entrevista Ravena', ciclo:3},
+  {id:37, data:'28/04', diaSemana:'Seg', mes:'abril', advogado:'Filipe Onofre', conteudo:'Direito ao contraditório: como usar a seu favor na Justiça', tipo:'educativo', formato:'Solo falando', ciclo:3},
+  {id:38, data:'29/04', diaSemana:'Ter', mes:'abril', advogado:'Jacqueline Grando', conteudo:'Como reunir provas para construir sua defesa rural', tipo:'dica', formato:'Solo falando', ciclo:3},
+  {id:39, data:'30/04', diaSemana:'Qua', mes:'abril', advogado:'Anderson Comarella', conteudo:'Próximos passos: quando e como contratar um advogado rural', tipo:'educativo', formato:'Entrevista Ravena', ciclo:3},
+];
+
+const TIPO_LABEL = {
+  noticia: '🔴 Notícia',
+  dica: '🟢 Dica',
+  educativo: '🔵 Educativo',
+  quebra: '🟡 Quebra',
+};
+const STATUS_KEY = 'qv_grav_status';
+
+let statuses = {};
+let typeFilter = 'all';
+let statusFilter = 'all';
+
+function loadStatuses() {
+  try { statuses = JSON.parse(localStorage.getItem(STATUS_KEY)) || {}; } catch { statuses = {}; }
+}
+function saveStatuses() {
+  localStorage.setItem(STATUS_KEY, JSON.stringify(statuses));
+}
+function getStatus(id) {
+  return statuses[id] || 'pendente';
+}
+function setStatus(id, st) {
+  statuses[id] = st;
+  saveStatuses();
+  renderAll();
+}
+
+function initials(name) {
+  return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+}
+
+function buildCard(day) {
+  const st = getStatus(day.id);
+  const stClass = st === 'concluido' ? 'concluido' : st === 'recusado' ? 'recusado' : '';
+  const formatoEmoji = day.formato === 'Solo falando' ? '📹' : day.formato === 'Entrevista Ravena' ? '🎤' : '👔';
+
+  return `
+  <div class="day-card ${stClass}" id="card-${day.id}" data-tipo="${day.tipo}" data-status="${st}" data-advogado="${day.advogado}" data-content="${day.conteudo.toLowerCase()}">
+    <div class="card-stripe ${day.tipo}"></div>
+    <div class="card-header">
+      <div class="card-day-num">
+        ${day.data}<span>${day.diaSemana}</span>
+      </div>
+      <div style="flex:1">
+        <div class="card-badges">
+          <span class="badge ${day.tipo}">${TIPO_LABEL[day.tipo]}</span>
+          <span class="badge ciclo">Ciclo ${day.ciclo}</span>
+        </div>
+        <div class="card-id" style="margin-top:.3rem">Gravação #${day.id}</div>
+      </div>
+    </div>
+
+    <div class="card-lawyer">
+      <div class="card-lawyer-avatar">${initials(day.advogado)}</div>
+      ${day.advogado}
+    </div>
+
+    <div class="card-content">${day.conteudo}</div>
+
+    <div class="card-meta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      09:00 – 10:30 &nbsp;·&nbsp;
+      ${formatoEmoji} ${day.formato}
+    </div>
+
+    <div class="card-actions">
+      <button class="btn-status ${st==='concluido'?'active-done':''}" onclick="setStatus(${day.id},'concluido')">
+        ✅ Concluído
+      </button>
+      <button class="btn-status ${st==='recusado'?'active-recusa':''}" onclick="setStatus(${day.id},'recusado')">
+        ❌ Recusa
+      </button>
+      <button class="btn-status ${st==='pendente'?'active-pending':''}" onclick="setStatus(${day.id},'pendente')">
+        ⏳ Pendente
+      </button>
+    </div>
+  </div>`;
+}
+
+function updateStats() {
+  const done = CALENDARIO.filter(d => getStatus(d.id) === 'concluido').length;
+  const recusa = CALENDARIO.filter(d => getStatus(d.id) === 'recusado').length;
+  const pending = 39 - done - recusa;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statRecusa').textContent = recusa;
+  document.getElementById('statPending').textContent = pending;
+  const pct = Math.round((done / 39) * 100);
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${done} / 39 concluídos (${pct}%)`;
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const lawyer = document.getElementById('lawyerSelect').value.toLowerCase();
+
+  let anyVisible = false;
+
+  CALENDARIO.forEach(day => {
+    const card = document.getElementById('card-' + day.id);
+    if (!card) return;
+
+    const matchSearch = !search || day.advogado.toLowerCase().includes(search) || day.conteudo.toLowerCase().includes(search);
+    const matchLawyer = !lawyer || day.advogado.toLowerCase() === lawyer;
+    const matchType = typeFilter === 'all' || day.tipo === typeFilter;
+    const st = getStatus(day.id);
+    const matchStatus = statusFilter === 'all' || st === statusFilter;
+
+    const visible = matchSearch && matchLawyer && matchType && matchStatus;
+    card.style.display = visible ? '' : 'none';
+    if (visible) anyVisible = true;
+  });
+
+  // hide/show month sections if all hidden
+  ['marco', 'abril'].forEach(mes => {
+    const cards = CALENDARIO.filter(d => d.mes === mes);
+    const anyVis = cards.some(d => {
+      const c = document.getElementById('card-' + d.id);
+      return c && c.style.display !== 'none';
+    });
+    const section = document.getElementById('grid' + (mes === 'marco' ? 'March' : 'April'));
+    if (section) section.style.display = anyVis ? '' : 'none';
+  });
+
+  document.getElementById('noResults').classList.toggle('visible', !anyVisible);
+}
+
+function setTypeFilter(type, btn) {
+  typeFilter = type;
+  document.querySelectorAll('.filter-btn[class*="f-"]').forEach(b => {
+    if (['f-all','f-noticia','f-dica','f-educativo','f-quebra'].some(c => b.classList.contains(c))) {
+      b.classList.remove('active');
+    }
+  });
+  btn.classList.add('active');
+  applyFilters();
+}
+
+function setStatusFilter(status, btn) {
+  if (statusFilter === status) {
+    statusFilter = 'all';
+    document.querySelectorAll('.filter-btn.f-done, .filter-btn.f-pending, .filter-btn.f-recusa').forEach(b => b.classList.remove('active'));
+  } else {
+    statusFilter = status;
+    document.querySelectorAll('.filter-btn.f-done, .filter-btn.f-pending, .filter-btn.f-recusa').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  applyFilters();
+}
+
+function resetAll() {
+  if (!confirm('Tem certeza? Todo o progresso será apagado.')) return;
+  statuses = {};
+  saveStatuses();
+  renderAll();
+}
+
+function renderAll() {
+  const marchCards = CALENDARIO.filter(d => d.mes === 'marco').map(buildCard).join('');
+  const aprilCards = CALENDARIO.filter(d => d.mes === 'abril').map(buildCard).join('');
+  document.getElementById('cardsMarch').innerHTML = marchCards;
+  document.getElementById('cardsApril').innerHTML = aprilCards;
+  updateStats();
+  applyFilters();
+}
+
+// INIT
+loadStatuses();
+renderAll();
+</script>
+</body>
+</html>
