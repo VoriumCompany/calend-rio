@@ -6,369 +6,679 @@
   <title>Queiroz Advogados — Agenda</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --primary: #2A7E78;
-      --primary-light: #3a9e97;
-      --primary-pale: #e8f5f4;
-      --bg: #f0f4f8;
-      --white: #ffffff;
-      --border: #e2e8f0;
-      --text: #1e293b;
-      --muted: #94a3b8;
-      --sidebar-w: 220px;
 
-      --c1: #d1fae5; --c1b: #059669;
-      --c2: #fef3c7; --c2b: #d97706;
-      --c3: #dbeafe; --c3b: #2563eb;
-      --c4: #fce7f3; --c4b: #db2777;
-      --c5: #ede9fe; --c5b: #7c3aed;
-      --c6: #e8f5f4; --c6b: #2A7E78;
+    :root {
+      --p:    #2A7E78;
+      --pl:   #3eb8b0;
+      --pg:   rgba(42,126,120,0.15);
+      --glow: rgba(42,126,120,0.5);
+      --bg:   #080808;
+      --s1:   #0f0f0f;
+      --s2:   #141414;
+      --s3:   #1a1a1a;
+      --bd:   rgba(255,255,255,0.07);
+      --tx:   #f0f4f4;
+      --mu:   rgba(240,244,244,0.4);
+      --sw:   240px;
     }
 
-    html, body { height: 100%; font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+    html, body { height: 100%; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--tx); overflow: hidden; }
 
-    /* ===== LOADING ===== */
+    /* ══════════════════════════════════
+       BACKGROUND ANIMATED GRID
+    ══════════════════════════════════ */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(42,126,120,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(42,126,120,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+      animation: gridDrift 40s linear infinite;
+    }
+    @keyframes gridDrift { to { background-position: 48px 48px; } }
+
+    body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 5% 50%, rgba(42,126,120,0.1) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 35% at 95% 15%, rgba(62,184,176,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse 30% 40% at 50% 100%, rgba(42,126,120,0.05) 0%, transparent 50%);
+    }
+
+    /* ══════════════════════════════════
+       LOADING
+    ══════════════════════════════════ */
     #loadingScreen {
       position: fixed; inset: 0; z-index: 9999;
-      background: var(--white); display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 1rem;
+      background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem;
     }
-    .load-logo { font-size: 2.5rem; }
-    .load-text { font-size: .85rem; color: var(--muted); font-weight: 500; }
-    .load-bar { width: 180px; height: 3px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
-    .load-fill { height: 100%; width: 0%; background: var(--primary); border-radius: 99px; animation: loadAnim 1.6s ease forwards; }
-    @keyframes loadAnim { to { width: 100%; } }
+    .ld-icon { font-size: 3rem; animation: ldPulse 1.5s ease-in-out infinite; }
+    @keyframes ldPulse { 0%,100%{filter:drop-shadow(0 0 8px var(--glow))} 50%{filter:drop-shadow(0 0 28px var(--glow))} }
+    .ld-name { font-size: .9rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--mu); }
+    .ld-bar { width: 160px; height: 2px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; }
+    .ld-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--p), var(--pl)); border-radius: 99px; animation: ldFill 1.8s ease forwards; }
+    @keyframes ldFill { to { width: 100%; } }
 
-    /* ===== APP SHELL ===== */
-    #app { display: none; height: 100vh; }
-    .app-layout { display: flex; height: 100vh; overflow: hidden; }
+    /* ══════════════════════════════════
+       APP SHELL
+    ══════════════════════════════════ */
+    #app { display: none; height: 100vh; position: relative; z-index: 1; }
+    .layout { display: flex; height: 100vh; overflow: hidden; }
 
-    /* ===== SIDEBAR ===== */
+    /* ══════════════════════════════════
+       SIDEBAR
+    ══════════════════════════════════ */
     .sidebar {
-      width: var(--sidebar-w); flex-shrink: 0;
-      background: var(--white); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; padding: 1.5rem 1rem;
-      overflow: hidden;
+      width: var(--sw); flex-shrink: 0;
+      background: var(--s1);
+      border-right: 1px solid var(--bd);
+      display: flex; flex-direction: column;
+      padding: 1.25rem .9rem;
+      position: relative; overflow: hidden;
     }
-    .sidebar-logo {
-      display: flex; align-items: center; gap: .6rem;
-      margin-bottom: 2rem; padding: 0 .5rem;
+    .sidebar::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--p), transparent);
+      opacity: .5;
     }
-    .logo-icon {
-      width: 36px; height: 36px; border-radius: 10px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; color: white; flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(42,126,120,0.3);
-    }
-    .logo-text { font-size: .95rem; font-weight: 800; color: var(--primary); letter-spacing: -.01em; line-height: 1.2; }
-    .logo-sub { font-size: .65rem; color: var(--muted); font-weight: 500; }
 
-    .nav-section { font-size: .65rem; font-weight: 700; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; padding: .25rem .5rem; margin-bottom: .35rem; margin-top: .75rem; }
-
-    .nav-item {
+    .s-logo {
       display: flex; align-items: center; gap: .75rem;
-      padding: .65rem .75rem; border-radius: 10px; cursor: pointer;
-      font-size: .85rem; font-weight: 500; color: #64748b;
-      transition: all .18s; border: none; background: none; width: 100%;
-      text-align: left;
+      padding: .5rem .4rem 1.5rem;
     }
-    .nav-item:hover { background: #f8fafc; color: var(--text); }
-    .nav-item.active { background: var(--primary-pale); color: var(--primary); font-weight: 700; }
-    .nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
-
-    .nav-spacer { flex: 1; }
-
-    .user-info {
-      display: flex; align-items: center; gap: .65rem;
-      padding: .75rem; border-radius: 12px; background: #f8fafc;
-      border: 1px solid var(--border); margin-top: .5rem;
-    }
-    .user-av {
-      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    .s-logo-icon {
+      width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--p), var(--pl));
       display: flex; align-items: center; justify-content: center;
-      font-size: .8rem; font-weight: 700; color: white;
+      font-size: 1.2rem; box-shadow: 0 0 20px var(--glow);
+      animation: iconGlow 3s ease-in-out infinite;
     }
-    .user-info-text { flex: 1; min-width: 0; }
-    .user-info-name { font-size: .8rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-info-role { font-size: .68rem; color: var(--muted); }
-    .btn-logout-sm {
-      width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-      background: none; border: 1px solid #e2e8f0; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: .85rem; color: var(--muted); transition: all .2s;
+    @keyframes iconGlow {
+      0%,100% { box-shadow: 0 0 12px var(--glow); }
+      50% { box-shadow: 0 0 28px var(--glow), 0 0 50px rgba(42,126,120,0.2); }
     }
-    .btn-logout-sm:hover { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
+    .s-logo-text { font-size: .9rem; font-weight: 800; letter-spacing: .04em; }
+    .s-logo-sub { font-size: .62rem; color: var(--p); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
 
-    /* ===== MAIN ===== */
+    .s-section { font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.18); padding: .25rem .5rem; margin: .75rem 0 .3rem; }
+
+    .s-item {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .6rem .75rem; border-radius: 10px;
+      font-size: .82rem; font-weight: 500; color: var(--mu);
+      cursor: pointer; transition: all .2s;
+      border: none; background: none; width: 100%; text-align: left;
+      position: relative; overflow: hidden;
+    }
+    .s-item::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(42,126,120,0.12), transparent);
+      opacity: 0; transition: opacity .2s; border-radius: 10px;
+    }
+    .s-item:hover { color: var(--tx); }
+    .s-item:hover::before { opacity: 1; }
+    .s-item.active {
+      color: var(--pl); font-weight: 700;
+      background: rgba(42,126,120,0.12);
+      border: 1px solid rgba(42,126,120,0.25);
+    }
+    .s-item.active::after {
+      content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
+      width: 2px; background: var(--pl); border-radius: 99px;
+      box-shadow: 0 0 8px var(--glow);
+    }
+    .s-icon { font-size: .95rem; width: 18px; text-align: center; flex-shrink: 0; }
+
+    .s-spacer { flex: 1; }
+
+    .s-user {
+      display: flex; align-items: center; gap: .7rem;
+      padding: .8rem; border-radius: 12px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--bd);
+      margin-top: .5rem;
+    }
+    .s-av {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--p), var(--pl));
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 800; color: #fff;
+      box-shadow: 0 0 10px var(--glow);
+    }
+    .s-user-name { font-size: .78rem; font-weight: 700; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-user-role { font-size: .62rem; color: var(--mu); }
+    .s-out {
+      width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+      background: none; border: 1px solid var(--bd);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; color: var(--mu); transition: all .2s;
+    }
+    .s-out:hover { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.3); color: #f87171; }
+
+    /* ══════════════════════════════════
+       MAIN
+    ══════════════════════════════════ */
     .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 
     /* Top bar */
     .topbar {
-      height: 64px; background: var(--white); border-bottom: 1px solid var(--border);
+      height: 60px; background: var(--s1); border-bottom: 1px solid var(--bd);
       padding: 0 1.5rem; display: flex; align-items: center; gap: 1rem; flex-shrink: 0;
+      position: relative;
     }
-    .search-box {
+    .topbar::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(42,126,120,0.3), transparent);
+      animation: scanLine 4s ease-in-out infinite;
+    }
+    @keyframes scanLine {
+      0% { transform: scaleX(0); transform-origin: left; }
+      50% { transform: scaleX(1); transform-origin: left; }
+      51% { transform: scaleX(1); transform-origin: right; }
+      100% { transform: scaleX(0); transform-origin: right; }
+    }
+
+    .search {
       display: flex; align-items: center; gap: .5rem;
-      background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;
-      padding: .45rem .85rem; width: 220px;
+      background: var(--s2); border: 1px solid var(--bd);
+      border-radius: 10px; padding: .45rem .85rem; width: 200px;
+      transition: border-color .2s;
     }
-    .search-box input {
-      border: none; background: none; font-size: .82rem; color: var(--text);
-      outline: none; font-family: 'Inter', sans-serif; width: 100%;
+    .search:focus-within { border-color: rgba(42,126,120,.4); box-shadow: 0 0 0 3px rgba(42,126,120,.08); }
+    .search input { border: none; background: none; font-size: .8rem; color: var(--tx); outline: none; font-family: 'Inter', sans-serif; width: 100%; }
+    .search input::placeholder { color: var(--mu); }
+    .search-icon { color: var(--mu); font-size: .85rem; }
+
+    .topbar-gap { flex: 1; }
+
+    /* Animated status ticker */
+    .status-ticker {
+      display: flex; align-items: center; gap: .5rem;
+      font-size: .72rem; color: var(--mu);
     }
-    .search-box input::placeholder { color: var(--muted); }
+    .status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: #10b981; box-shadow: 0 0 6px #10b981;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
 
-    .topbar-spacer { flex: 1; }
-
-    .topbar-btns { display: flex; align-items: center; gap: .5rem; }
     .tb-btn {
-      width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--white); cursor: pointer; display: flex; align-items: center;
-      justify-content: center; font-size: 1rem; color: var(--muted); transition: all .2s;
+      width: 34px; height: 34px; border-radius: 9px;
+      border: 1px solid var(--bd); background: var(--s2);
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; font-size: .9rem; color: var(--mu);
+      transition: all .2s;
     }
-    .tb-btn:hover { background: #f8fafc; color: var(--text); }
+    .tb-btn:hover { border-color: rgba(42,126,120,.4); color: var(--pl); background: rgba(42,126,120,.08); }
 
-    .topbar-av {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    .tb-av {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--p), var(--pl));
       display: flex; align-items: center; justify-content: center;
-      font-size: .8rem; font-weight: 700; color: white; cursor: pointer;
-      border: 2px solid var(--primary-pale);
+      font-size: .75rem; font-weight: 800; color: #fff;
+      box-shadow: 0 0 12px var(--glow); cursor: pointer;
+      border: 1.5px solid rgba(42,126,120,.5);
     }
 
-    /* Calendar area */
-    .cal-area { flex: 1; overflow-y: auto; overflow-x: auto; padding: 1.5rem; }
+    /* ══════════════════════════════════
+       CAL AREA
+    ══════════════════════════════════ */
+    .cal-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .cal-area::-webkit-scrollbar { width: 4px; }
+    .cal-area::-webkit-scrollbar-track { background: transparent; }
+    .cal-area::-webkit-scrollbar-thumb { background: rgba(42,126,120,.3); border-radius: 99px; }
 
-    /* Calendar header */
-    .cal-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-    .cal-month { font-size: 1.4rem; font-weight: 800; color: var(--text); }
-    .cal-nav { display: flex; align-items: center; gap: .35rem; }
+    /* Cal header */
+    .cal-hd { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .cal-nav { display: flex; gap: .3rem; }
     .cal-nav-btn {
-      width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border);
-      background: var(--white); cursor: pointer; display: flex; align-items: center;
-      justify-content: center; font-size: .9rem; color: var(--muted); transition: all .18s;
+      width: 32px; height: 32px; border-radius: 9px;
+      border: 1px solid var(--bd); background: var(--s2);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; color: var(--mu); transition: all .2s;
     }
-    .cal-nav-btn:hover { background: var(--primary-pale); color: var(--primary); border-color: rgba(42,126,120,.3); }
-    .cal-header-spacer { flex: 1; }
-    .view-toggle { display: flex; background: #f1f5f9; border-radius: 10px; padding: .25rem; gap: .25rem; }
-    .view-btn {
-      padding: .4rem .9rem; border-radius: 7px; font-size: .8rem; font-weight: 600;
-      cursor: pointer; border: none; background: none; color: var(--muted); transition: all .2s;
+    .cal-nav-btn:hover { border-color: rgba(42,126,120,.5); color: var(--pl); box-shadow: 0 0 10px rgba(42,126,120,.2); }
+
+    .cal-title {
+      font-size: 1.5rem; font-weight: 900; letter-spacing: -.02em;
+      background: linear-gradient(135deg, #fff 30%, var(--pl) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
-    .view-btn.active { background: var(--white); color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-    .btn-add-new {
+    .hd-gap { flex: 1; }
+    .view-pills {
+      display: flex; background: var(--s2); border: 1px solid var(--bd);
+      border-radius: 10px; padding: .25rem; gap: .2rem;
+    }
+    .view-pill {
+      padding: .38rem .85rem; border-radius: 7px; font-size: .78rem; font-weight: 600;
+      cursor: pointer; border: none; background: none; color: var(--mu); transition: all .2s;
+    }
+    .view-pill.active {
+      background: var(--p); color: #fff;
+      box-shadow: 0 0 14px var(--glow);
+    }
+    .btn-roteiro {
       display: flex; align-items: center; gap: .4rem;
-      padding: .5rem 1rem; border-radius: 10px; font-size: .82rem; font-weight: 700;
-      background: var(--primary); color: white; border: none; cursor: pointer;
-      transition: all .2s; box-shadow: 0 4px 12px rgba(42,126,120,.3);
+      padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 700;
+      background: linear-gradient(135deg, var(--p), var(--pl));
+      color: #fff; border: none; cursor: pointer;
+      box-shadow: 0 0 16px var(--glow); transition: all .2s;
     }
-    .btn-add-new:hover { background: var(--primary-light); transform: translateY(-1px); }
+    .btn-roteiro:hover { transform: translateY(-2px); box-shadow: 0 4px 24px var(--glow); }
 
-    /* ===== WEEK CALENDAR GRID ===== */
-    .week-grid {
-      background: var(--white); border-radius: 16px; border: 1px solid var(--border);
-      overflow: hidden; min-width: 700px;
-      box-shadow: 0 1px 8px rgba(0,0,0,.05);
+    /* ══════════════════════════════════
+       STATS ROW
+    ══════════════════════════════════ */
+    .stats-row { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .stat-card {
+      flex: 1; min-width: 120px;
+      background: var(--s1); border: 1px solid var(--bd);
+      border-radius: 14px; padding: .9rem 1.1rem;
+      position: relative; overflow: hidden;
+      transition: all .25s; cursor: default;
+      animation: fadeUp .5s ease both;
+    }
+    .stat-card:nth-child(2) { animation-delay: .07s; }
+    .stat-card:nth-child(3) { animation-delay: .14s; }
+    .stat-card:nth-child(4) { animation-delay: .21s; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+    .stat-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(42,126,120,.5), transparent);
+    }
+    .stat-card:hover { border-color: rgba(42,126,120,.35); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .stat-icon { font-size: 1.1rem; margin-bottom: .4rem; }
+    .stat-num { font-size: 1.6rem; font-weight: 900; color: var(--pl); line-height: 1; }
+    .stat-label { font-size: .7rem; color: var(--mu); margin-top: .2rem; font-weight: 500; }
+
+    /* ══════════════════════════════════
+       MONTH CALENDAR
+    ══════════════════════════════════ */
+    .cal-wrap {
+      background: var(--s1); border: 1px solid var(--bd);
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,0,0,.5);
+      position: relative;
+      animation: fadeUp .4s ease both;
+    }
+    .cal-wrap::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--p), transparent);
     }
 
-    /* Days header row */
-    .days-header { display: grid; grid-template-columns: 64px repeat(7, 1fr); border-bottom: 1px solid var(--border); }
-    .days-header-corner { border-right: 1px solid var(--border); }
-    .day-col-head {
-      padding: .85rem .5rem; text-align: center; border-right: 1px solid var(--border);
-      font-size: .8rem;
+    /* Day header row */
+    .cal-days-head {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      border-bottom: 1px solid var(--bd);
     }
-    .day-col-head:last-child { border-right: none; }
-    .day-name { font-weight: 600; color: var(--muted); text-transform: capitalize; font-size: .75rem; letter-spacing: .03em; }
-    .day-num {
-      font-size: 1.25rem; font-weight: 800; color: var(--text); margin-top: .15rem;
-      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-      border-radius: 50%; margin: .25rem auto 0;
+    .cal-day-name {
+      padding: .75rem; text-align: center;
+      font-size: .68rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--p);
+      border-right: 1px solid var(--bd);
     }
-    .day-col-head.today .day-num { background: var(--primary); color: white; }
-    .day-col-head.today .day-name { color: var(--primary); font-weight: 700; }
+    .cal-day-name:last-child { border-right: none; }
 
-    /* Time rows */
-    .time-grid { display: grid; grid-template-columns: 64px repeat(7, 1fr); }
+    /* Month grid */
+    .cal-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
 
-    .time-label {
-      padding: 0 .75rem; height: 80px; display: flex; align-items: flex-start;
-      padding-top: .6rem; font-size: .72rem; font-weight: 600; color: var(--muted);
-      border-right: 1px solid var(--border); flex-shrink: 0;
+    .cal-cell {
+      min-height: 100px; padding: .6rem .55rem .5rem;
+      border-right: 1px solid rgba(255,255,255,.04);
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      position: relative; transition: background .2s; cursor: default;
     }
+    .cal-cell:nth-child(7n) { border-right: none; }
+    .cal-cell:hover { background: rgba(255,255,255,.02); }
+    .cal-cell.other { opacity: .3; }
+    .cal-cell.today { background: rgba(42,126,120,.05); }
 
-    .time-cell {
-      height: 80px; border-right: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;
-      position: relative; padding: .35rem;
-    }
-    .time-cell:last-child { border-right: none; }
-
-    /* Event card in cell */
-    .event-card {
-      border-radius: 10px; padding: .55rem .7rem;
-      border-left: 3px solid; cursor: pointer;
-      transition: all .18s; position: relative;
-      margin-bottom: .3rem;
-    }
-    .event-card:hover { filter: brightness(.96); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
-
-    .event-code { font-size: .68rem; font-weight: 700; margin-bottom: .2rem; }
-    .event-title { font-size: .78rem; font-weight: 700; line-height: 1.3; margin-bottom: .4rem; }
-    .event-time { font-size: .68rem; color: rgba(0,0,0,.5); margin-bottom: .5rem; }
-
-    .event-avatars { display: flex; gap: -4px; }
-    .ev-av {
-      width: 22px; height: 22px; border-radius: 50%; border: 2px solid white;
+    .cell-num {
+      width: 26px; height: 26px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: .6rem; font-weight: 700; color: white; margin-left: -4px; flex-shrink: 0;
+      font-size: .8rem; font-weight: 700; color: var(--mu); margin-bottom: .35rem;
+      transition: all .2s;
     }
-    .ev-av:first-child { margin-left: 0; }
+    .cal-cell.today .cell-num {
+      background: var(--p); color: #fff;
+      box-shadow: 0 0 14px var(--glow);
+      animation: todayPulse 3s ease-in-out infinite;
+    }
+    @keyframes todayPulse {
+      0%,100% { box-shadow: 0 0 10px var(--glow); }
+      50% { box-shadow: 0 0 22px var(--glow), 0 0 40px rgba(42,126,120,0.2); }
+    }
 
-    /* TALL event card (spans 1.5 hours = ~120px) */
-    .event-card.tall {
+    /* Event pill inside cell */
+    .ev-pill {
+      display: flex; align-items: center; gap: .35rem;
+      padding: .28rem .55rem; border-radius: 7px;
+      margin-bottom: .3rem; cursor: pointer;
+      font-size: .72rem; font-weight: 700; line-height: 1.2;
+      border-left: 2.5px solid; position: relative;
+      transition: all .2s; overflow: hidden;
+      animation: pillIn .3s ease both;
+    }
+    @keyframes pillIn { from{opacity:0;transform:translateX(-6px)} to{opacity:1;transform:none} }
+    .ev-pill:hover { transform: translateX(3px); filter: brightness(1.2); }
+    .ev-pill::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent 60%, rgba(255,255,255,.06));
+      pointer-events: none;
+    }
+    .ev-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .ev-mine { box-shadow: 0 0 8px var(--glow) !important; }
+
+    /* Today marker ring */
+    .cal-cell.today::after {
+      content: '';
+      position: absolute; inset: 0;
+      border: 1px solid rgba(42,126,120,.2);
+      border-radius: 2px; pointer-events: none;
+    }
+
+    /* ══════════════════════════════════
+       WEEK VIEW
+    ══════════════════════════════════ */
+    .week-wrap {
+      background: var(--s1); border: 1px solid var(--bd);
+      border-radius: 20px; overflow: hidden;
+      box-shadow: 0 0 40px rgba(0,0,0,.5);
+      position: relative;
+    }
+    .week-wrap::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--p), transparent);
+    }
+    .week-head { display: grid; grid-template-columns: 56px repeat(7,1fr); border-bottom: 1px solid var(--bd); }
+    .week-corner { border-right: 1px solid var(--bd); }
+    .week-day-col {
+      padding: .8rem .4rem; text-align: center;
+      border-right: 1px solid var(--bd); font-size: .75rem;
+    }
+    .week-day-col:last-child { border-right: none; }
+    .wdc-name { font-size: .67rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--mu); }
+    .wdc-num {
+      width: 32px; height: 32px; border-radius: 50%; margin: .25rem auto 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem; font-weight: 800; color: var(--tx); transition: all .2s;
+    }
+    .week-day-col.today .wdc-num {
+      background: var(--p); color: #fff;
+      box-shadow: 0 0 14px var(--glow);
+    }
+    .week-day-col.today .wdc-name { color: var(--pl); }
+
+    .week-body { display: grid; grid-template-columns: 56px repeat(7,1fr); }
+    .week-time {
+      height: 90px; padding: .6rem .5rem 0; text-align: right;
+      font-size: .68rem; font-weight: 600; color: rgba(255,255,255,.2);
+      border-right: 1px solid var(--bd);
+    }
+    .week-cell {
+      height: 90px; border-right: 1px solid rgba(255,255,255,.03);
+      border-bottom: 1px solid rgba(255,255,255,.03);
+      padding: .35rem; position: relative;
+    }
+    .week-cell:last-child { border-right: none; }
+
+    .week-event {
       position: absolute; top: .35rem; left: .35rem; right: .35rem;
-      height: calc(160px - .7rem);
-      display: flex; flex-direction: column;
+      height: calc(180px - .7rem); /* spans 2 rows = 1.5h */
+      border-radius: 12px; padding: .75rem;
+      border-left: 3px solid; cursor: pointer;
+      display: flex; flex-direction: column; gap: .25rem;
+      transition: all .2s; animation: pillIn .35s ease both;
+      overflow: hidden;
     }
-
-    /* === MINE highlight === */
-    .event-card.mine-event { box-shadow: 0 0 0 2px var(--primary); }
-
-    /* ===== MONTH VIEW ===== */
-    .month-view { background: var(--white); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,.05); }
-    .month-head { display: grid; grid-template-columns: repeat(7, 1fr); border-bottom: 1px solid var(--border); }
-    .month-head-day { padding: .6rem; text-align: center; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-    .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-    .month-cell {
-      min-height: 90px; padding: .5rem; border-right: 1px solid #f1f5f9;
-      border-bottom: 1px solid #f1f5f9; position: relative;
+    .week-event::before {
+      content: ''; position: absolute; inset: 0; border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,.04), transparent);
     }
-    .month-cell:nth-child(7n) { border-right: none; }
-    .month-num { font-size: .82rem; font-weight: 700; color: var(--muted); margin-bottom: .35rem; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-    .month-cell.today-cell .month-num { background: var(--primary); color: white; }
-    .month-cell.other-month .month-num { color: #cbd5e1; }
-    .month-event {
-      padding: .2rem .5rem; border-radius: 6px; font-size: .7rem; font-weight: 600;
-      margin-bottom: .2rem; cursor: pointer; border-left: 3px solid;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    .week-event:hover { transform: scale(1.02); filter: brightness(1.15); }
+    .week-event.mine { box-shadow: 0 0 18px var(--glow); }
+
+    .we-code { font-size: .66rem; font-weight: 700; opacity: .8; }
+    .we-title { font-size: .82rem; font-weight: 800; }
+    .we-time { font-size: .68rem; opacity: .7; }
+    .we-avs { display: flex; margin-top: auto; }
+    .we-av {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1.5px solid rgba(0,0,0,.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .56rem; font-weight: 800; color: #fff; margin-left: -5px; flex-shrink: 0;
     }
-    .month-event:hover { filter: brightness(.95); }
+    .we-av:first-child { margin-left: 0; }
 
-    /* ===== RIGHT PANEL ===== */
-    .right-panel { width: 280px; flex-shrink: 0; background: var(--white); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-    .rp-head { padding: 1.25rem 1.25rem .75rem; border-bottom: 1px solid var(--border); }
-    .rp-title { font-size: .85rem; font-weight: 700; margin-bottom: .25rem; }
-    .rp-sub { font-size: .72rem; color: var(--muted); }
-    .rp-body { padding: 1rem; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: .75rem; }
-
-    .mini-session {
-      padding: .85rem; border-radius: 12px; border: 1px solid var(--border);
-      cursor: pointer; transition: all .18s;
+    /* ══════════════════════════════════
+       RIGHT PANEL
+    ══════════════════════════════════ */
+    .rp {
+      width: 270px; flex-shrink: 0;
+      background: var(--s1); border-left: 1px solid var(--bd);
+      display: flex; flex-direction: column; overflow: hidden;
+      position: relative;
     }
-    .mini-session:hover { border-color: rgba(42,126,120,.4); background: var(--primary-pale); }
-    .mini-session.mine-session { border-color: rgba(42,126,120,.5); background: var(--primary-pale); }
-    .ms-date { font-size: .68rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .3rem; }
-    .ms-time { font-size: .82rem; font-weight: 700; margin-bottom: .25rem; }
-    .ms-advs { font-size: .72rem; color: var(--muted); line-height: 1.5; }
-    .ms-badge { display: inline-flex; align-items: center; gap: .2rem; padding: .15rem .5rem; border-radius: 99px; font-size: .65rem; font-weight: 700; background: var(--primary); color: white; margin-top: .35rem; }
-
-    /* Assiduidade panel */
-    .assi-mini { padding: 1rem; border-top: 1px solid var(--border); }
-    .assi-mini-title { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .75rem; }
-    .assi-pct { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
-    .assi-bar { height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin: .5rem 0; }
-    .assi-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light)); border-radius: 99px; transition: width .5s; }
-    .assi-detail-btn {
-      width: 100%; padding: .5rem; border-radius: 8px; font-size: .78rem; font-weight: 600;
-      background: var(--primary-pale); border: 1px solid rgba(42,126,120,.25); color: var(--primary);
-      cursor: pointer; transition: all .2s; margin-top: .5rem;
+    .rp::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(42,126,120,.4), transparent);
     }
-    .assi-detail-btn:hover { background: rgba(42,126,120,.15); }
+    .rp-head { padding: 1.1rem 1.1rem .75rem; border-bottom: 1px solid var(--bd); }
+    .rp-title { font-size: .88rem; font-weight: 800; }
+    .rp-sub { font-size: .7rem; color: var(--mu); margin-top: .15rem; }
+    .rp-body { flex: 1; overflow-y: auto; padding: .85rem; display: flex; flex-direction: column; gap: .6rem; }
+    .rp-body::-webkit-scrollbar { width: 3px; }
+    .rp-body::-webkit-scrollbar-thumb { background: rgba(42,126,120,.3); border-radius: 99px; }
 
-    /* ===== MODAL ===== */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 999;
-      background: rgba(15,23,42,.4); backdrop-filter: blur(4px);
+    .rp-session {
+      padding: .8rem; border-radius: 12px; border: 1px solid var(--bd);
+      background: var(--s2); cursor: pointer; transition: all .2s;
+      position: relative; overflow: hidden;
+      animation: fadeUp .4s ease both;
+    }
+    .rp-session::before {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(42,126,120,.06), transparent);
+      opacity: 0; transition: opacity .2s;
+    }
+    .rp-session:hover { border-color: rgba(42,126,120,.4); }
+    .rp-session:hover::before { opacity: 1; }
+    .rp-session.mine { border-color: rgba(42,126,120,.35); border-left: 2px solid var(--p); }
+    .rps-date { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--p); margin-bottom: .3rem; }
+    .rps-time { font-size: .88rem; font-weight: 800; margin-bottom: .2rem; }
+    .rps-names { font-size: .7rem; color: var(--mu); line-height: 1.5; }
+    .rps-badge {
+      display: inline-flex; align-items: center; gap: .2rem;
+      padding: .15rem .55rem; border-radius: 99px; font-size: .64rem; font-weight: 700;
+      margin-top: .4rem;
+    }
+    .rps-badge.present { background: rgba(5,150,105,.2); border: 1px solid rgba(5,150,105,.3); color: #34d399; }
+    .rps-badge.absent { background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.3); color: #f87171; }
+    .rps-badge.pending { background: rgba(255,255,255,.05); border: 1px solid var(--bd); color: var(--mu); }
+
+    /* Attendance mini */
+    .assi-panel {
+      padding: .9rem 1.1rem; border-top: 1px solid var(--bd);
+    }
+    .assi-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--mu); margin-bottom: .7rem; }
+    .assi-ring-wrap { display: flex; align-items: center; gap: 1rem; margin-bottom: .7rem; }
+    .assi-ring {
+      width: 52px; height: 52px; flex-shrink: 0; position: relative;
+    }
+    .assi-ring svg { transform: rotate(-90deg); }
+    .assi-ring-track { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 4; }
+    .assi-ring-fill { fill: none; stroke: var(--pl); stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset .8s cubic-bezier(.16,1,.3,1); }
+    .assi-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 800; color: var(--pl); }
+    .assi-ring-info { flex: 1; }
+    .assi-pct-big { font-size: 1.2rem; font-weight: 900; color: var(--pl); }
+    .assi-sub { font-size: .68rem; color: var(--mu); }
+    .assi-btn {
+      width: 100%; padding: .5rem; border-radius: 9px;
+      background: rgba(42,126,120,.1); border: 1px solid rgba(42,126,120,.25);
+      color: var(--pl); font-size: .75rem; font-weight: 700;
+      cursor: pointer; transition: all .2s;
+    }
+    .assi-btn:hover { background: rgba(42,126,120,.2); box-shadow: 0 0 10px rgba(42,126,120,.2); }
+
+    /* ══════════════════════════════════
+       MODAL
+    ══════════════════════════════════ */
+    .overlay {
+      position: fixed; inset: 0; z-index: 9990;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(6px);
       display: flex; align-items: center; justify-content: center; padding: 1rem;
-      opacity: 0; pointer-events: none; transition: opacity .2s;
+      opacity: 0; pointer-events: none; transition: opacity .25s;
     }
-    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
     .modal {
-      background: var(--white); border-radius: 20px; padding: 2rem;
-      width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,.15);
-      transform: scale(.96); transition: transform .2s;
+      background: var(--s1); border: 1px solid var(--bd);
+      border-radius: 22px; padding: 2rem;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 0 60px rgba(0,0,0,.8), 0 0 0 1px rgba(42,126,120,.15);
+      transform: translateY(20px) scale(.97); transition: transform .25s;
+      position: relative; overflow: hidden;
     }
-    .modal-overlay.open .modal { transform: scale(1); }
-    .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
-    .modal-title { font-size: 1.05rem; font-weight: 800; }
-    .modal-close { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1.1rem; color: var(--muted); transition: all .18s; }
-    .modal-close:hover { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
-    .modal-date { font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: .4rem; margin-bottom: 1rem; }
-    .modal-time { font-size: 2rem; font-weight: 900; color: var(--text); margin-bottom: 1.5rem; }
-    .modal-section-title { font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; }
+    .modal::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--p), transparent);
+    }
+    .overlay.open .modal { transform: none; }
+
+    .modal-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title { font-size: 1rem; font-weight: 800; }
+    .modal-close {
+      width: 30px; height: 30px; border-radius: 8px;
+      border: 1px solid var(--bd); background: none;
+      cursor: pointer; font-size: .95rem; color: var(--mu); transition: all .2s;
+    }
+    .modal-close:hover { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.3); color: #f87171; }
+
+    .modal-date { font-size: .78rem; color: var(--mu); margin-bottom: .5rem; }
+    .modal-time { font-size: 2.2rem; font-weight: 900; letter-spacing: -.02em; margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #fff, var(--pl));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .modal-slabel { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .09em; color: var(--mu); margin-bottom: .6rem; }
+
     .modal-advs { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1.5rem; }
     .modal-adv {
-      display: flex; align-items: center; gap: .65rem; padding: .6rem .8rem;
-      border-radius: 10px; background: #f8fafc; border: 1px solid var(--border);
+      display: flex; align-items: center; gap: .65rem;
+      padding: .6rem .85rem; border-radius: 11px;
+      background: var(--s2); border: 1px solid var(--bd); transition: border-color .2s;
     }
-    .modal-adv.me { background: var(--primary-pale); border-color: rgba(42,126,120,.35); }
-    .modal-adv-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; color: white; flex-shrink: 0; }
-    .modal-adv-name { font-size: .85rem; font-weight: 600; flex: 1; }
-    .modal-adv-me { font-size: .68rem; font-weight: 700; color: var(--primary); background: rgba(42,126,120,.1); padding: .15rem .5rem; border-radius: 99px; }
-    .presence-btns { display: flex; gap: .5rem; }
-    .presence-btn {
-      flex: 1; padding: .65rem; border-radius: 10px; font-size: .82rem; font-weight: 700;
-      cursor: pointer; border: 1px solid; transition: all .2s;
+    .modal-adv.me { border-color: rgba(42,126,120,.4); background: rgba(42,126,120,.08); }
+    .modal-adv-av {
+      width: 30px; height: 30px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 800; color: #fff; flex-shrink: 0;
     }
-    .presence-btn.present { background: #d1fae5; border-color: #6ee7b7; color: #059669; }
-    .presence-btn.absent { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
-    .presence-btn.pending { background: #f1f5f9; border-color: var(--border); color: var(--muted); }
-    .presence-btn.selected-present { background: #059669; border-color: #059669; color: white; box-shadow: 0 4px 12px rgba(5,150,105,.3); }
-    .presence-btn.selected-absent { background: #ef4444; border-color: #ef4444; color: white; box-shadow: 0 4px 12px rgba(239,68,68,.3); }
-
-    /* ===== DETAIL PANEL (slides in) ===== */
-    .detail-panel {
-      position: fixed; right: -380px; top: 0; bottom: 0; width: 360px; z-index: 500;
-      background: var(--white); border-left: 1px solid var(--border);
-      box-shadow: -8px 0 32px rgba(0,0,0,.08);
-      transition: right .3s cubic-bezier(.16,1,.3,1);
-      display: flex; flex-direction: column; overflow: hidden;
+    .modal-adv-name { font-size: .82rem; font-weight: 600; flex: 1; }
+    .modal-adv-you {
+      font-size: .65rem; font-weight: 700; padding: .15rem .5rem;
+      border-radius: 99px; background: rgba(42,126,120,.2);
+      border: 1px solid rgba(42,126,120,.4); color: var(--pl);
     }
-    .detail-panel.open { right: 0; }
-    .dp-head {
-      padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: .75rem;
+
+    .pres-btns { display: flex; gap: .5rem; }
+    .pres-btn {
+      flex: 1; padding: .65rem; border-radius: 10px;
+      font-size: .82rem; font-weight: 700; cursor: pointer;
+      border: 1px solid; transition: all .2s; font-family: 'Inter', sans-serif;
     }
-    .dp-close { margin-left: auto; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 1rem; color: var(--muted); transition: all .18s; }
-    .dp-close:hover { background: #f1f5f9; }
-    .dp-body { flex: 1; overflow-y: auto; padding: 1.25rem; }
+    .pres-btn.opt-present { background: rgba(5,150,105,.1); border-color: rgba(5,150,105,.3); color: #34d399; }
+    .pres-btn.opt-absent  { background: rgba(239,68,68,.1);  border-color: rgba(239,68,68,.3);  color: #f87171; }
+    .pres-btn.sel-present { background: #059669; border-color: #059669; color: #fff; box-shadow: 0 0 14px rgba(5,150,105,.4); }
+    .pres-btn.sel-absent  { background: #dc2626; border-color: #dc2626; color: #fff; box-shadow: 0 0 14px rgba(220,38,38,.4); }
 
-    /* ===== SPINNER ===== */
-    .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(42,126,120,.3); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Roteiro modal */
+    .rot-block {
+      background: var(--s2); border: 1px solid var(--bd);
+      border-radius: 12px; padding: 1rem; margin-bottom: .75rem; position: relative;
+    }
+    .rot-tag { font-size: .64rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--p); margin-bottom: .35rem; }
+    .rot-text { font-size: .85rem; line-height: 1.75; color: rgba(240,244,244,.8); padding-right: 3.5rem; }
+    .copy-btn {
+      position: absolute; top: .7rem; right: .7rem;
+      padding: .25rem .6rem; border-radius: 7px;
+      background: rgba(42,126,120,.15); border: 1px solid rgba(42,126,120,.3);
+      color: var(--pl); font-size: .68rem; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .copy-btn:hover { background: rgba(42,126,120,.3); }
+    .copy-btn.copied { background: rgba(5,150,105,.2); border-color: rgba(5,150,105,.4); color: #34d399; }
 
-    /* ===== TOAST ===== */
-    .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; padding: .75rem 1.2rem; border-radius: 12px; font-size: .85rem; font-weight: 600; backdrop-filter: blur(12px); display: flex; align-items: center; gap: .5rem; animation: toastIn .25s ease both; background: #d1fae5; border: 1px solid #6ee7b7; color: #059669; box-shadow: 0 4px 16px rgba(0,0,0,.1); }
-    .toast.error { background: #fee2e2; border-color: #fca5a5; color: #ef4444; }
-    @keyframes toastIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: none; } }
+    /* Assi modal */
+    .assi-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .7rem .85rem; border-radius: 10px;
+      background: var(--s2); border: 1px solid var(--bd); margin-bottom: .45rem;
+    }
+    .assi-row-date { font-size: .82rem; font-weight: 700; }
+    .assi-row-time { font-size: .7rem; color: var(--mu); margin-top: .1rem; }
 
-    /* ===== SCROLLBAR ===== */
-    .cal-area::-webkit-scrollbar { width: 5px; height: 5px; }
-    .cal-area::-webkit-scrollbar-track { background: transparent; }
-    .cal-area::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+    /* ══════════════════════════════════
+       TOAST
+    ══════════════════════════════════ */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+      padding: .7rem 1.1rem; border-radius: 12px; font-size: .82rem; font-weight: 700;
+      display: flex; align-items: center; gap: .4rem;
+      animation: toastIn .25s ease both;
+      background: rgba(5,150,105,.2); border: 1px solid rgba(5,150,105,.35); color: #34d399;
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    .toast.err { background: rgba(220,38,38,.15); border-color: rgba(220,38,38,.3); color: #f87171; }
+    @keyframes toastIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
 
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 900px) {
-      .right-panel { display: none; }
-      .sidebar { width: 64px; }
-      .sidebar-logo .logo-text, .sidebar-logo .logo-sub, .nav-item span:not(.nav-icon), .nav-section, .user-info-text { display: none; }
-      .nav-item { justify-content: center; padding: .65rem; }
-      .user-info { padding: .5rem; justify-content: center; }
+    /* ══════════════════════════════════
+       PICKER (sem login)
+    ══════════════════════════════════ */
+    .picker-card {
+      background: var(--s1); border: 1px solid var(--bd);
+      border-radius: 24px; padding: 2.5rem; width: 100%; max-width: 400px;
+      box-shadow: 0 0 60px rgba(0,0,0,.8), 0 0 0 1px rgba(42,126,120,.1);
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .picker-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--p), transparent);
+    }
+    .picker-select {
+      width: 100%; padding: .85rem 1rem; border-radius: 12px;
+      border: 1px solid var(--bd); background: var(--s2);
+      color: var(--tx); font-size: .88rem; font-family: 'Inter', sans-serif;
+      outline: none; margin: 1.5rem 0 1rem; cursor: pointer;
+      transition: border-color .2s; appearance: none;
+    }
+    .picker-select:focus { border-color: rgba(42,126,120,.5); box-shadow: 0 0 0 3px rgba(42,126,120,.1); }
+    .picker-select option { background: #111; }
+    .picker-btn {
+      width: 100%; padding: .9rem; border-radius: 12px;
+      background: linear-gradient(135deg, var(--p), var(--pl));
+      color: #fff; font-size: .92rem; font-weight: 800; border: none;
+      cursor: pointer; box-shadow: 0 0 20px var(--glow); transition: all .25s;
+    }
+    .picker-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 30px var(--glow); }
+
+    /* ══════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════ */
+    @media (max-width: 960px) {
+      .rp { display: none; }
+      :root { --sw: 60px; }
+      .s-logo-text, .s-logo-sub, .s-item span:not(.s-icon), .s-section, .s-user-name, .s-user-role { display: none; }
+      .s-item { justify-content: center; padding: .65rem; }
+      .s-user { padding: .5rem; justify-content: center; }
+      .s-logo { padding: .5rem .25rem 1.5rem; justify-content: center; }
     }
   </style>
 </head>
@@ -376,734 +686,690 @@
 
 <!-- Loading -->
 <div id="loadingScreen">
-  <div class="load-logo">⚖️</div>
-  <div class="load-text">QUEIROZ ADVOGADOS</div>
-  <div class="load-bar"><div class="load-fill"></div></div>
+  <div class="ld-icon">⚖️</div>
+  <div class="ld-name">Queiroz Advogados</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
 </div>
 
 <!-- App -->
 <div id="app">
-<div class="app-layout">
+<div class="layout">
 
-  <!-- ===== SIDEBAR ===== -->
+  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">⚖️</div>
+    <div class="s-logo">
+      <div class="s-logo-icon">⚖️</div>
       <div>
-        <div class="logo-text">QUEIROZ</div>
-        <div class="logo-sub">Advogados</div>
+        <div class="s-logo-text">QUEIROZ</div>
+        <div class="s-logo-sub">Advogados</div>
       </div>
     </div>
 
-    <div class="nav-section">Menu</div>
-    <button class="nav-item" onclick="setView('week')">
-      <span class="nav-icon">📊</span>
-      <span>Dashboard</span>
-    </button>
-    <button class="nav-item active" onclick="setView('week')">
-      <span class="nav-icon">📅</span>
-      <span>Agenda</span>
-    </button>
-    <button class="nav-item" onclick="openRoteiro()">
-      <span class="nav-icon">📝</span>
-      <span>Roteiro</span>
-    </button>
-    <button class="nav-item" onclick="openConteudo()">
-      <span class="nav-icon">🎯</span>
-      <span>Conteúdos</span>
-    </button>
+    <div class="s-section">Menu</div>
+    <button class="s-item" onclick="setView('month')"><span class="s-icon">📊</span><span>Dashboard</span></button>
+    <button class="s-item active" onclick="setView('month')"><span class="s-icon">📅</span><span>Agenda</span></button>
+    <button class="s-item" onclick="openRoteiro()"><span class="s-icon">📝</span><span>Roteiro</span></button>
+    <button class="s-item" onclick="openConteudo()"><span class="s-icon">🎯</span><span>Conteúdos</span></button>
 
-    <div class="nav-spacer"></div>
+    <div class="s-spacer"></div>
 
-    <div class="user-info">
-      <div class="user-av" id="sidebarInitials">?</div>
-      <div class="user-info-text">
-        <div class="user-info-name" id="sidebarName">...</div>
-        <div class="user-info-role">Advogado(a)</div>
+    <div class="s-user">
+      <div class="s-av" id="sidebarAv">?</div>
+      <div>
+        <div class="s-user-name" id="sidebarName">...</div>
+        <div class="s-user-role">Advogado(a)</div>
       </div>
-      <button class="btn-logout-sm" onclick="doLogout()" title="Sair">🚪</button>
+      <button class="s-out" onclick="doLogout()" title="Sair">🚪</button>
     </div>
   </aside>
 
-  <!-- ===== MAIN ===== -->
+  <!-- MAIN -->
   <main class="main">
+
     <!-- Topbar -->
     <div class="topbar">
-      <div class="search-box">
-        <span style="color:var(--muted);font-size:.9rem">🔍</span>
+      <div class="search">
+        <span class="search-icon">🔍</span>
         <input type="text" placeholder="Buscar sessão...">
       </div>
-      <div class="topbar-spacer"></div>
-      <div class="topbar-btns">
-        <button class="tb-btn">🔔</button>
-        <button class="tb-btn">⚙️</button>
-        <div class="topbar-av" id="topbarInitials">?</div>
+      <div class="topbar-gap"></div>
+      <div class="status-ticker">
+        <div class="status-dot"></div>
+        <span>Sistema Online</span>
       </div>
+      <button class="tb-btn">🔔</button>
+      <div class="tb-av" id="topbarAv">?</div>
     </div>
 
-    <!-- Calendar area -->
-    <div class="cal-area" id="calArea">
-      <!-- Header -->
-      <div class="cal-header">
+    <!-- Cal area -->
+    <div class="cal-area">
+
+      <!-- Stats -->
+      <div class="stats-row" id="statsRow"></div>
+
+      <!-- Cal header -->
+      <div class="cal-hd">
         <div class="cal-nav">
           <button class="cal-nav-btn" onclick="navigate(-1)">‹</button>
           <button class="cal-nav-btn" onclick="navigate(1)">›</button>
         </div>
-        <div class="cal-month" id="calMonthTitle">Março, 2025</div>
-        <div class="cal-header-spacer"></div>
-        <div class="view-toggle">
-          <button class="view-btn active" id="btnWeek" onclick="setView('week')">Semana</button>
-          <button class="view-btn" id="btnMonth" onclick="setView('month')">Mês</button>
+        <div class="cal-title" id="calTitle">Março, 2025</div>
+        <div class="hd-gap"></div>
+        <div class="view-pills">
+          <button class="view-pill" id="vpWeek" onclick="setView('week')">Semana</button>
+          <button class="view-pill active" id="vpMonth" onclick="setView('month')">Mês</button>
         </div>
-        <button class="btn-add-new" onclick="openRoteiro()">+ Ver Roteiro</button>
+        <button class="btn-roteiro" onclick="openRoteiro()">✦ Ver Roteiro</button>
       </div>
 
-      <!-- Calendar grid rendered here -->
+      <!-- Calendar -->
       <div id="calContainer"></div>
+
     </div>
   </main>
 
-  <!-- ===== RIGHT PANEL ===== -->
-  <div class="right-panel">
+  <!-- RIGHT PANEL -->
+  <div class="rp">
     <div class="rp-head">
       <div class="rp-title">Minhas Sessões</div>
-      <div class="rp-sub" id="rpSub">Carregando...</div>
+      <div class="rp-sub" id="rpSub">–</div>
     </div>
-    <div class="rp-body" id="rpBody">
-      <div style="text-align:center;padding:2rem"><div class="spinner"></div></div>
-    </div>
-    <div class="assi-mini">
-      <div class="assi-mini-title">Assiduidade</div>
-      <div class="assi-pct" id="assiPct">–%</div>
-      <div class="assi-bar"><div class="assi-bar-fill" id="assiBarFill" style="width:0%"></div></div>
-      <div style="font-size:.72rem;color:var(--muted)" id="assiDetail">– de – sessões</div>
-      <button class="assi-detail-btn" onclick="openAssiModal()">Ver detalhes →</button>
+    <div class="rp-body" id="rpBody"></div>
+    <div class="assi-panel">
+      <div class="assi-label">Assiduidade</div>
+      <div class="assi-ring-wrap">
+        <div class="assi-ring">
+          <svg width="52" height="52" viewBox="0 0 52 52">
+            <circle class="assi-ring-track" cx="26" cy="26" r="22"/>
+            <circle class="assi-ring-fill" id="assiRingFill" cx="26" cy="26" r="22"
+              stroke-dasharray="138.2" stroke-dashoffset="138.2"/>
+          </svg>
+          <div class="assi-ring-text" id="assiRingText">0%</div>
+        </div>
+        <div class="assi-ring-info">
+          <div class="assi-pct-big" id="assiPct">0%</div>
+          <div class="assi-sub" id="assiSub">– de – sessões</div>
+        </div>
+      </div>
+      <button class="assi-btn" onclick="openAssiModal()">Ver detalhes →</button>
     </div>
   </div>
 
-</div><!-- app-layout -->
-</div><!-- app -->
+</div>
+</div>
 
-<!-- ===== MODAL: Session Detail ===== -->
-<div class="modal-overlay" id="sessionModal" onclick="closeSessionModal(event)">
+<!-- Modal: Session -->
+<div class="overlay" id="modalSession" onclick="closeModal('modalSession',event)">
   <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="modalTitle">Sessão de Gravação</div>
-      <button class="modal-close" onclick="closeSessionModal()">✕</button>
+    <div class="modal-hd">
+      <div class="modal-title" id="mTitle">Sessão de Gravação</div>
+      <button class="modal-close" onclick="closeModal('modalSession')">✕</button>
     </div>
-    <div class="modal-date" id="modalDate"></div>
-    <div class="modal-time" id="modalTime"></div>
-    <div class="modal-section-title">Advogados nesta sessão</div>
-    <div class="modal-advs" id="modalAdvs"></div>
-    <div id="modalPresence" style="display:none">
-      <div class="modal-section-title">Sua presença</div>
-      <div class="presence-btns">
-        <button class="presence-btn" id="btnPresente" onclick="setPresence('presente')">✓ Presente</button>
-        <button class="presence-btn" id="btnAusente" onclick="setPresence('ausente')">✗ Ausente</button>
+    <div class="modal-date" id="mDate"></div>
+    <div class="modal-time" id="mTime"></div>
+    <div class="modal-slabel">Advogados nesta sessão</div>
+    <div class="modal-advs" id="mAdvs"></div>
+    <div id="mPres" style="display:none">
+      <div class="modal-slabel">Sua presença nesta sessão</div>
+      <div class="pres-btns">
+        <button class="pres-btn opt-present" id="btnP" onclick="setPresence('presente')">✓ Presente</button>
+        <button class="pres-btn opt-absent"  id="btnA" onclick="setPresence('ausente')">✗ Ausente</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===== MODAL: Assiduidade ===== -->
-<div class="modal-overlay" id="assiModal" onclick="closeAssiModal(event)">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-head">
+<!-- Modal: Assiduidade -->
+<div class="overlay" id="modalAssi" onclick="closeModal('modalAssi',event)">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hd">
       <div class="modal-title">Assiduidade Completa</div>
-      <button class="modal-close" onclick="closeAssiModal()">✕</button>
+      <button class="modal-close" onclick="closeModal('modalAssi')">✕</button>
     </div>
-    <div id="assiModalContent"></div>
+    <div id="mAssiContent"></div>
   </div>
 </div>
 
-<!-- ===== MODAL: Roteiro ===== -->
-<div class="modal-overlay" id="roteiroModal" onclick="closeRoteiroModal(event)">
-  <div class="modal" style="max-width:560px;max-height:85vh;overflow-y:auto">
-    <div class="modal-head" style="position:sticky;top:0;background:white;z-index:1;padding-bottom:1rem">
-      <div class="modal-title" id="roteiroModalTitle">Meu Roteiro</div>
-      <button class="modal-close" onclick="closeRoteiroModal()">✕</button>
+<!-- Modal: Roteiro -->
+<div class="overlay" id="modalRoteiro" onclick="closeModal('modalRoteiro',event)">
+  <div class="modal" style="max-width:540px;max-height:88vh;overflow-y:auto">
+    <div class="modal-hd" style="position:sticky;top:0;background:var(--s1);z-index:1;padding-bottom:1rem">
+      <div class="modal-title" id="mRotTitle">Meu Roteiro</div>
+      <button class="modal-close" onclick="closeModal('modalRoteiro')">✕</button>
     </div>
-    <div id="roteiroModalContent"></div>
+    <div id="mRotContent"></div>
   </div>
 </div>
 
-<!-- ===== MODAL: Conteúdos ===== -->
-<div class="modal-overlay" id="conteudoModal" onclick="closeConteudoModal(event)">
-  <div class="modal" style="max-width:480px;max-height:85vh;overflow-y:auto">
-    <div class="modal-head" style="position:sticky;top:0;background:white;z-index:1;padding-bottom:1rem">
+<!-- Modal: Conteúdos -->
+<div class="overlay" id="modalConteudo" onclick="closeModal('modalConteudo',event)">
+  <div class="modal" style="max-width:480px;max-height:88vh;overflow-y:auto">
+    <div class="modal-hd" style="position:sticky;top:0;background:var(--s1);z-index:1;padding-bottom:1rem">
       <div class="modal-title">Meus Conteúdos</div>
-      <button class="modal-close" onclick="closeConteudoModal()">✕</button>
+      <button class="modal-close" onclick="closeModal('modalConteudo')">✕</button>
     </div>
-    <div id="conteudoModalContent"></div>
+    <div id="mContContent"></div>
   </div>
 </div>
 
 <script>
-  // ===== MODO SEM SUPABASE (localStorage) =====
-  // Quando Supabase estiver configurado, trocar USE_SUPABASE para true
+  // ═══════════════════════════════
+  //  CONFIG
+  // ═══════════════════════════════
   const USE_SUPABASE = false;
   const SUPABASE_URL = 'COLE_SUA_URL_AQUI';
   const SUPABASE_ANON_KEY = 'COLE_SUA_CHAVE_AQUI';
   const sb = USE_SUPABASE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-  // ===== DATA =====
-  const ADVOGADOS = [
-    { id:1,  nome:'Leonardo Minuzzi',    tema:'Diesel sumiu no RS',              formato:'Testemunho',  duracao:'60s',  prioridade:'urgente', prazo:'25/03', sessoes:[1,5],
-      roteiro:[{parte:'Abertura',texto:'Você sabia que o diesel do seu caminhão pode ter desaparecido por culpa de uma empresa?'},{parte:'Desenvolvimento',texto:'Eu sou Leonardo Minuzzi, advogado especialista em direito do transporte. Já atendi dezenas de caminhoneiros gaúchos que perderam combustível sem explicação — e conseguimos indenização para todos eles.'},{parte:'CTA',texto:'Se você passou por isso, me chama no direct agora. Eu analiso seu caso gratuitamente. Não deixa pra depois!'}],
-      conteudos:[{num:1,tema:'Diesel sumiu — o que fazer?',tipo:'Reels',prazo:'25/03'},{num:2,tema:'Quem paga pelo combustível perdido?',tipo:'Carrossel',prazo:'28/03'}] },
-    { id:2,  nome:'Gedilson Jacobowski',  tema:'Rescisão indireta — insalubre',   formato:'Educativo',  duracao:'90s',  prioridade:'alto',    prazo:'28/03', sessoes:[1,6],
-      roteiro:[{parte:'Abertura',texto:'Seu patrão te obriga a trabalhar em local perigoso sem o equipamento adequado? Você pode pedir rescisão indireta!'},{parte:'Desenvolvimento',texto:'Sou Gedilson Jacobowski, advogado trabalhista. A rescisão indireta é como se o empregador tivesse sido o responsável pela saída — você sai, mas recebe multa do FGTS, aviso prévio e tudo mais.'},{parte:'CTA',texto:'Comenta "RESCISÃO" aqui embaixo e eu te explico como funciona no seu caso!'}],
-      conteudos:[{num:1,tema:'Rescisão indireta passo a passo',tipo:'Reels',prazo:'28/03'},{num:2,tema:'Ambiente insalubre — seus direitos',tipo:'Carrossel',prazo:'30/03'}] },
-    { id:3,  nome:'Lucas Hank',           tema:'Dívida com banco — negociar',    formato:'Tutorial',   duracao:'60s',  prioridade:'alto',    prazo:'30/03', sessoes:[1,7],
-      roteiro:[{parte:'Abertura',texto:'Tá devendo pro banco e não sabe por onde começar? Eu vou te mostrar como negociar de forma inteligente!'},{parte:'Desenvolvimento',texto:'Sou Lucas Hank, advogado em direito do consumidor. A maioria das dívidas bancárias tem juros abusivos que podem ser contestados na Justiça.'},{parte:'CTA',texto:'Salva esse vídeo e me chama no direct para uma análise gratuita.'}],
-      conteudos:[{num:1,tema:'Como negociar dívida bancária',tipo:'Reels',prazo:'30/03'},{num:2,tema:'Juros abusivos — como identificar',tipo:'Carrossel',prazo:'01/04'}] },
-    { id:4,  nome:'Carlos Alexandre',     tema:'Acidente de trabalho — indenização', formato:'Testemunho', duracao:'90s', prioridade:'urgente', prazo:'25/03', sessoes:[1,8],
-      roteiro:[{parte:'Abertura',texto:'Sofreu acidente no trabalho e a empresa não quer assumir? Você tem direito a muito mais do que imagina!'},{parte:'Desenvolvimento',texto:'Carlos Alexandre, advogado especialista em acidentes de trabalho. Além do INSS, você pode receber indenização por danos morais, materiais e lucros cessantes.'},{parte:'CTA',texto:'Não assina nada sem falar comigo antes! Me chama agora no direct.'}],
-      conteudos:[{num:1,tema:'Acidente de trabalho — o que fazer nas primeiras 24h',tipo:'Reels',prazo:'25/03'},{num:2,tema:'Indenização além do INSS',tipo:'Carrossel',prazo:'28/03'}] },
-    { id:5,  nome:'Filipe Onofre',        tema:'Pensão alimentícia — revisão',   formato:'Educativo',  duracao:'60s',  prioridade:'normal',  prazo:'01/04', sessoes:[2,5],
-      roteiro:[{parte:'Abertura',texto:'A pensão alimentícia que você paga está te afogando? Saiba que ela pode ser revisada!'},{parte:'Desenvolvimento',texto:'Filipe Onofre, advogado de família. Quando muda sua renda ou a situação do filho, é possível pedir revisão judicial.'},{parte:'CTA',texto:'Comenta "PENSÃO" aqui embaixo para eu te mandar um guia gratuito!'}],
-      conteudos:[{num:1,tema:'Revisão de pensão — quando é possível?',tipo:'Reels',prazo:'01/04'},{num:2,tema:'Mudança de renda e pensão',tipo:'Carrossel',prazo:'03/04'}] },
-    { id:6,  nome:'Jacqueline Grando',    tema:'Inventário — sem brigas',        formato:'Educativo',  duracao:'90s',  prioridade:'alto',    prazo:'28/03', sessoes:[2,6],
-      roteiro:[{parte:'Abertura',texto:'Partilha de herança está virando guerra na sua família? Existe uma forma mais rápida e pacífica.'},{parte:'Desenvolvimento',texto:'Jacqueline Grando, advogada de direito sucessório. O inventário extrajudicial pode ser feito em cartório, em semanas.'},{parte:'CTA',texto:'Salva esse vídeo! E se precisar de ajuda, me manda mensagem.'}],
-      conteudos:[{num:1,tema:'Inventário extrajudicial — passo a passo',tipo:'Reels',prazo:'28/03'},{num:2,tema:'Como dividir herança sem brigas',tipo:'Carrossel',prazo:'31/03'}] },
-    { id:7,  nome:'Anderson Comarella',   tema:'Produto com defeito',            formato:'Tutorial',   duracao:'60s',  prioridade:'normal',  prazo:'01/04', sessoes:[2,7],
-      roteiro:[{parte:'Abertura',texto:'Comprou um produto e veio com defeito? A loja se recusa a trocar? Isso é crime!'},{parte:'Desenvolvimento',texto:'Anderson Comarella, advogado do consumidor. O CDC garante troca, reparo ou devolução — e se a empresa não cumprir, você pode pedir danos morais.'},{parte:'CTA',texto:'Comenta "DEFEITO" aqui que eu te ajudo a resolver isso hoje!'}],
-      conteudos:[{num:1,tema:'Produto com defeito — seus direitos',tipo:'Reels',prazo:'01/04'},{num:2,tema:'Como reclamar e vencer no Procon',tipo:'Carrossel',prazo:'04/04'}] },
-    { id:8,  nome:'Thaimmylly Alves',     tema:'Violência doméstica — proteção', formato:'Informativo',duracao:'90s',  prioridade:'urgente', prazo:'20/03', sessoes:[2,8],
-      roteiro:[{parte:'Abertura',texto:'Se você ou alguém que você conhece está sofrendo violência em casa, ESTE VÍDEO É URGENTE.'},{parte:'Desenvolvimento',texto:'Thaimmylly Alves, advogada especialista em violência doméstica. A medida protetiva pode ser concedida em 48 horas.'},{parte:'CTA',texto:'Salva esse vídeo. Liga 180 agora ou me chama que eu te ajudo a dar o primeiro passo.'}],
-      conteudos:[{num:1,tema:'Medida protetiva — como pedir em 48h',tipo:'Reels',prazo:'20/03'},{num:2,tema:'O que fazer ao sofrer violência doméstica',tipo:'Carrossel',prazo:'22/03'}] },
-    { id:9,  nome:'Samuel Gripp',         tema:'Usucapião — regularizar imóvel', formato:'Tutorial',   duracao:'60s',  prioridade:'normal',  prazo:'05/04', sessoes:[3,5],
-      roteiro:[{parte:'Abertura',texto:'Mora num imóvel há anos, paga as contas, mas não tem escritura? Você pode se tornar o dono legal!'},{parte:'Desenvolvimento',texto:'Samuel Gripp, advogado imobiliário. A usucapião permite que quem mora e cuida de um imóvel por tempo suficiente consiga a propriedade na Justiça.'},{parte:'CTA',texto:'Me manda "USUCAPIÃO" no direct para entender se o seu caso tem requisitos!'}],
-      conteudos:[{num:1,tema:'Usucapião — quem tem direito?',tipo:'Reels',prazo:'05/04'},{num:2,tema:'Regularizar imóvel sem escritura',tipo:'Carrossel',prazo:'07/04'}] },
-    { id:10, nome:'Fernanda Miotto',      tema:'Guarda compartilhada',          formato:'Educativo',  duracao:'90s',  prioridade:'alto',    prazo:'28/03', sessoes:[3,6],
-      roteiro:[{parte:'Abertura',texto:'Separou e agora não sabe como vai funcionar a guarda dos filhos? Eu vou te explicar tudo!'},{parte:'Desenvolvimento',texto:'Fernanda Miotto, advogada de família. A guarda compartilhada é a regra no Brasil — os dois pais participam das decisões.'},{parte:'CTA',texto:'Comenta "GUARDA" aqui embaixo para eu te mandar um material completo!'}],
-      conteudos:[{num:1,tema:'Guarda compartilhada na prática',tipo:'Reels',prazo:'28/03'},{num:2,tema:'Guarda vs. custódia — diferenças',tipo:'Carrossel',prazo:'30/03'}] },
-    { id:11, nome:'Juliana Passarine',    tema:'Aposentadoria especial',        formato:'Informativo',duracao:'60s',  prioridade:'alto',    prazo:'30/03', sessoes:[3,7],
-      roteiro:[{parte:'Abertura',texto:'Você trabalha exposto a agentes nocivos à saúde? Saiba que pode se aposentar mais cedo!'},{parte:'Desenvolvimento',texto:'Juliana Passarine, advogada previdenciária. A aposentadoria especial reduz o tempo de contribuição para 15, 20 ou 25 anos.'},{parte:'CTA',texto:'Comenta "ESPECIAL" aqui para eu verificar se você tem direito!'}],
-      conteudos:[{num:1,tema:'Aposentadoria especial — tempo e requisitos',tipo:'Reels',prazo:'30/03'},{num:2,tema:'Atividades com direito à aposentadoria especial',tipo:'Carrossel',prazo:'01/04'}] },
-    { id:12, nome:'Samara Rambo',         tema:'Nome sujo indevido',            formato:'Tutorial',   duracao:'60s',  prioridade:'urgente', prazo:'22/03', sessoes:[3,8],
-      roteiro:[{parte:'Abertura',texto:'Seu nome foi negativado por uma dívida que não é sua? Isso é erro e você tem direito a indenização!'},{parte:'Desenvolvimento',texto:'Samara Rambo, advogada do consumidor. Negativação indevida gera danos morais — e conseguimos indenizações de R$3.000 a R$15.000.'},{parte:'CTA',texto:'Me chama agora! Analiso seu caso gratuitamente em minutos.'}],
-      conteudos:[{num:1,tema:'Nome sujo indevido — o que fazer agora',tipo:'Reels',prazo:'22/03'},{num:2,tema:'Quanto você pode receber de indenização',tipo:'Carrossel',prazo:'25/03'}] },
-    { id:13, nome:'Rafaela Ebert',        tema:'Assédio moral no trabalho',     formato:'Informativo',duracao:'90s',  prioridade:'alto',    prazo:'28/03', sessoes:[4,5],
-      roteiro:[{parte:'Abertura',texto:'Seu chefe te humilha, grita, te trata mal na frente dos outros? Isso é assédio moral e é crime!'},{parte:'Desenvolvimento',texto:'Rafaela Ebert, advogada trabalhista. O assédio moral no trabalho dá direito a danos morais e pode resultar em rescisão indireta.'},{parte:'CTA',texto:'Salva esse vídeo e me chama no direct. Primeira consulta gratuita!'}],
-      conteudos:[{num:1,tema:'Como provar assédio moral',tipo:'Reels',prazo:'28/03'},{num:2,tema:'Assédio moral — valores de indenização',tipo:'Carrossel',prazo:'30/03'}] },
-    { id:14, nome:'Marcos Pizatto',       tema:'Consórcio cancelado',           formato:'Tutorial',   duracao:'60s',  prioridade:'normal',  prazo:'05/04', sessoes:[4,6],
-      roteiro:[{parte:'Abertura',texto:'Pagou meses de consórcio, cancelou e a administradora está enrolando? Eu sei o que fazer!'},{parte:'Desenvolvimento',texto:'Marcos Pizatto, advogado do consumidor. A lei define prazo máximo para devolução. Se descumprir, você pode exigir correção mais indenização.'},{parte:'CTA',texto:'Comenta "CONSÓRCIO" aqui e te explico como agir!'}],
-      conteudos:[{num:1,tema:'Consórcio cancelado — como reaver seu dinheiro',tipo:'Reels',prazo:'05/04'},{num:2,tema:'Prazo legal para devolução do consórcio',tipo:'Carrossel',prazo:'07/04'}] },
-    { id:15, nome:'Rayka Passarini',      tema:'Direito digital — hackeado',    formato:'Informativo',duracao:'60s',  prioridade:'alto',    prazo:'30/03', sessoes:[4,7],
-      roteiro:[{parte:'Abertura',texto:'Tiveram acesso ao seu perfil, usaram sua imagem sem permissão ou te difamaram na internet? Isso é crime!'},{parte:'Desenvolvimento',texto:'Rayka Passarini, advogada em direito digital. Podemos registrar BO digital, solicitar remoção de conteúdo e pedir indenização.'},{parte:'CTA',texto:'Me chama no direct agora! Quanto antes agir, mais fácil resolver.'}],
-      conteudos:[{num:1,tema:'Perfil hackeado — o que fazer nas primeiras horas',tipo:'Reels',prazo:'30/03'},{num:2,tema:'Crimes digitais e como se proteger',tipo:'Carrossel',prazo:'02/04'}] },
+  // ═══════════════════════════════
+  //  DATA
+  // ═══════════════════════════════
+  const ADVS = [
+    {id:1,  nome:'Leonardo Minuzzi',   tema:'Diesel sumiu no RS',               formato:'Testemunho',  dur:'60s',  prio:'urgente',prazo:'25/03',sessoes:[1,5],
+     roteiro:[{parte:'Abertura',txt:'Você sabia que o diesel do seu caminhão pode ter desaparecido por culpa de uma empresa?'},{parte:'Desenvolvimento',txt:'Eu sou Leonardo Minuzzi, advogado especialista em direito do transporte. Já atendi dezenas de caminhoneiros gaúchos que perderam combustível sem explicação — e conseguimos indenização para todos eles.'},{parte:'CTA',txt:'Se você passou por isso, me chama no direct agora. Eu analiso seu caso gratuitamente. Não deixa pra depois!'}],
+     conteudos:[{n:1,tema:'Diesel sumiu — o que fazer?',tipo:'Reels',prazo:'25/03'},{n:2,tema:'Quem paga pelo combustível perdido?',tipo:'Carrossel',prazo:'28/03'}]},
+    {id:2,  nome:'Gedilson Jacobowski',tema:'Rescisão indireta — insalubre',    formato:'Educativo',  dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[1,6],
+     roteiro:[{parte:'Abertura',txt:'Seu patrão te obriga a trabalhar em local perigoso sem equipamento adequado? Você pode pedir rescisão indireta!'},{parte:'Desenvolvimento',txt:'Sou Gedilson Jacobowski, advogado trabalhista. A rescisão indireta é como se o empregador fosse responsável pela saída — você recebe multa do FGTS, aviso prévio e tudo mais.'},{parte:'CTA',txt:'Comenta "RESCISÃO" aqui embaixo e eu te explico como funciona no seu caso!'}],
+     conteudos:[{n:1,tema:'Rescisão indireta passo a passo',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Ambiente insalubre — seus direitos',tipo:'Carrossel',prazo:'30/03'}]},
+    {id:3,  nome:'Lucas Hank',         tema:'Dívida com banco — negociar',      formato:'Tutorial',   dur:'60s',  prio:'alto',   prazo:'30/03',sessoes:[1,7],
+     roteiro:[{parte:'Abertura',txt:'Tá devendo pro banco e não sabe por onde começar? Eu vou te mostrar como negociar de forma inteligente!'},{parte:'Desenvolvimento',txt:'Sou Lucas Hank, advogado em direito do consumidor. A maioria das dívidas bancárias tem juros abusivos que podem ser contestados na Justiça.'},{parte:'CTA',txt:'Salva esse vídeo e me chama no direct para uma análise gratuita.'}],
+     conteudos:[{n:1,tema:'Como negociar dívida bancária',tipo:'Reels',prazo:'30/03'},{n:2,tema:'Juros abusivos — como identificar',tipo:'Carrossel',prazo:'01/04'}]},
+    {id:4,  nome:'Carlos Alexandre',   tema:'Acidente de trabalho',             formato:'Testemunho', dur:'90s',  prio:'urgente',prazo:'25/03',sessoes:[1,8],
+     roteiro:[{parte:'Abertura',txt:'Sofreu acidente no trabalho e a empresa não quer assumir? Você tem direito a muito mais do que imagina!'},{parte:'Desenvolvimento',txt:'Carlos Alexandre, especialista em acidentes de trabalho. Além do INSS, você pode receber indenização por danos morais, materiais e lucros cessantes.'},{parte:'CTA',txt:'Não assina nada sem falar comigo antes! Me chama agora no direct.'}],
+     conteudos:[{n:1,tema:'Acidente de trabalho — primeiras 24h',tipo:'Reels',prazo:'25/03'},{n:2,tema:'Indenização além do INSS',tipo:'Carrossel',prazo:'28/03'}]},
+    {id:5,  nome:'Filipe Onofre',      tema:'Pensão alimentícia — revisão',     formato:'Educativo',  dur:'60s',  prio:'normal', prazo:'01/04',sessoes:[2,5],
+     roteiro:[{parte:'Abertura',txt:'A pensão que você paga está te afogando? Saiba que ela pode ser revisada!'},{parte:'Desenvolvimento',txt:'Filipe Onofre, advogado de família. Quando muda sua renda ou a situação do filho, é possível pedir revisão judicial.'},{parte:'CTA',txt:'Comenta "PENSÃO" aqui embaixo para eu te mandar um guia gratuito!'}],
+     conteudos:[{n:1,tema:'Revisão de pensão — quando é possível?',tipo:'Reels',prazo:'01/04'},{n:2,tema:'Mudança de renda e pensão',tipo:'Carrossel',prazo:'03/04'}]},
+    {id:6,  nome:'Jacqueline Grando',  tema:'Inventário sem brigas',            formato:'Educativo',  dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[2,6],
+     roteiro:[{parte:'Abertura',txt:'Partilha de herança está virando guerra na família? Existe uma forma mais rápida e pacífica.'},{parte:'Desenvolvimento',txt:'Jacqueline Grando, advogada de direito sucessório. O inventário extrajudicial pode ser feito em cartório, em semanas.'},{parte:'CTA',txt:'Salva esse vídeo! E se precisar de ajuda, me manda mensagem.'}],
+     conteudos:[{n:1,tema:'Inventário extrajudicial passo a passo',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Como dividir herança sem brigas',tipo:'Carrossel',prazo:'31/03'}]},
+    {id:7,  nome:'Anderson Comarella',tema:'Produto com defeito',               formato:'Tutorial',   dur:'60s',  prio:'normal', prazo:'01/04',sessoes:[2,7],
+     roteiro:[{parte:'Abertura',txt:'Comprou um produto e veio com defeito? A loja se recusa a trocar? Isso é crime!'},{parte:'Desenvolvimento',txt:'Anderson Comarella, advogado do consumidor. O CDC garante troca, reparo ou devolução — e se não cumprir, você pode pedir danos morais.'},{parte:'CTA',txt:'Comenta "DEFEITO" aqui que eu te ajudo a resolver hoje!'}],
+     conteudos:[{n:1,tema:'Produto com defeito — seus direitos',tipo:'Reels',prazo:'01/04'},{n:2,tema:'Como reclamar no Procon e vencer',tipo:'Carrossel',prazo:'04/04'}]},
+    {id:8,  nome:'Thaimmylly Alves',  tema:'Violência doméstica',              formato:'Informativo',dur:'90s',  prio:'urgente',prazo:'20/03',sessoes:[2,8],
+     roteiro:[{parte:'Abertura',txt:'Se você ou alguém que você conhece está sofrendo violência em casa, ESTE VÍDEO É URGENTE.'},{parte:'Desenvolvimento',txt:'Thaimmylly Alves, advogada especialista em violência doméstica. A medida protetiva pode ser concedida em 48 horas.'},{parte:'CTA',txt:'Salva esse vídeo. Liga 180 agora ou me chama que eu te ajudo a dar o primeiro passo.'}],
+     conteudos:[{n:1,tema:'Medida protetiva — como pedir em 48h',tipo:'Reels',prazo:'20/03'},{n:2,tema:'O que fazer ao sofrer violência doméstica',tipo:'Carrossel',prazo:'22/03'}]},
+    {id:9,  nome:'Samuel Gripp',      tema:'Usucapião — regularizar imóvel',   formato:'Tutorial',   dur:'60s',  prio:'normal', prazo:'05/04',sessoes:[3,5],
+     roteiro:[{parte:'Abertura',txt:'Mora num imóvel há anos mas não tem escritura? Você pode se tornar o dono legal!'},{parte:'Desenvolvimento',txt:'Samuel Gripp, advogado imobiliário. A usucapião permite que quem mora e cuida do imóvel consiga a propriedade na Justiça.'},{parte:'CTA',txt:'Me manda "USUCAPIÃO" no direct para entender se você tem direito!'}],
+     conteudos:[{n:1,tema:'Usucapião — quem tem direito?',tipo:'Reels',prazo:'05/04'},{n:2,tema:'Regularizar imóvel sem escritura',tipo:'Carrossel',prazo:'07/04'}]},
+    {id:10, nome:'Fernanda Miotto',   tema:'Guarda compartilhada',             formato:'Educativo',  dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[3,6],
+     roteiro:[{parte:'Abertura',txt:'Separou e não sabe como vai funcionar a guarda dos filhos? Eu vou te explicar tudo!'},{parte:'Desenvolvimento',txt:'Fernanda Miotto, advogada de família. A guarda compartilhada é a regra no Brasil — os dois pais participam das decisões.'},{parte:'CTA',txt:'Comenta "GUARDA" aqui embaixo para eu te mandar um material completo!'}],
+     conteudos:[{n:1,tema:'Guarda compartilhada na prática',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Guarda vs. custódia',tipo:'Carrossel',prazo:'30/03'}]},
+    {id:11, nome:'Juliana Passarine', tema:'Aposentadoria especial',           formato:'Informativo',dur:'60s',  prio:'alto',   prazo:'30/03',sessoes:[3,7],
+     roteiro:[{parte:'Abertura',txt:'Você trabalha exposto a agentes nocivos? Saiba que pode se aposentar mais cedo!'},{parte:'Desenvolvimento',txt:'Juliana Passarine, advogada previdenciária. A aposentadoria especial reduz o tempo de contribuição para 15, 20 ou 25 anos.'},{parte:'CTA',txt:'Comenta "ESPECIAL" aqui para eu verificar se você tem direito!'}],
+     conteudos:[{n:1,tema:'Aposentadoria especial — tempo e requisitos',tipo:'Reels',prazo:'30/03'},{n:2,tema:'Atividades com direito à apos. especial',tipo:'Carrossel',prazo:'01/04'}]},
+    {id:12, nome:'Samara Rambo',      tema:'Nome sujo indevido',               formato:'Tutorial',   dur:'60s',  prio:'urgente',prazo:'22/03',sessoes:[3,8],
+     roteiro:[{parte:'Abertura',txt:'Seu nome foi negativado por uma dívida que não é sua? Isso é erro e você tem direito a indenização!'},{parte:'Desenvolvimento',txt:'Samara Rambo, advogada do consumidor. Negativação indevida gera danos morais — indenizações de R$3.000 a R$15.000.'},{parte:'CTA',txt:'Me chama agora! Analiso seu caso gratuitamente em minutos.'}],
+     conteudos:[{n:1,tema:'Nome sujo indevido — o que fazer agora',tipo:'Reels',prazo:'22/03'},{n:2,tema:'Quanto você pode receber de indenização',tipo:'Carrossel',prazo:'25/03'}]},
+    {id:13, nome:'Rafaela Ebert',     tema:'Assédio moral no trabalho',        formato:'Informativo',dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[4,5],
+     roteiro:[{parte:'Abertura',txt:'Seu chefe te humilha na frente dos outros? Isso é assédio moral e é crime!'},{parte:'Desenvolvimento',txt:'Rafaela Ebert, advogada trabalhista. O assédio moral dá direito a danos morais e pode resultar em rescisão indireta.'},{parte:'CTA',txt:'Salva esse vídeo e me chama no direct. Primeira consulta gratuita!'}],
+     conteudos:[{n:1,tema:'Como provar assédio moral',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Assédio moral — valores de indenização',tipo:'Carrossel',prazo:'30/03'}]},
+    {id:14, nome:'Marcos Pizatto',    tema:'Consórcio cancelado',              formato:'Tutorial',   dur:'60s',  prio:'normal', prazo:'05/04',sessoes:[4,6],
+     roteiro:[{parte:'Abertura',txt:'Pagou meses de consórcio, cancelou e a administradora está enrolando? Eu sei o que fazer!'},{parte:'Desenvolvimento',txt:'Marcos Pizatto, advogado do consumidor. A lei define prazo máximo para devolução — se descumprir, você exige correção mais indenização.'},{parte:'CTA',txt:'Comenta "CONSÓRCIO" aqui e te explico como agir!'}],
+     conteudos:[{n:1,tema:'Consórcio cancelado — como reaver seu dinheiro',tipo:'Reels',prazo:'05/04'},{n:2,tema:'Prazo legal para devolução do consórcio',tipo:'Carrossel',prazo:'07/04'}]},
+    {id:15, nome:'Rayka Passarini',   tema:'Direito digital — perfil hackeado',formato:'Informativo',dur:'60s',  prio:'alto',   prazo:'30/03',sessoes:[4,7],
+     roteiro:[{parte:'Abertura',txt:'Usaram sua imagem sem permissão ou te difamaram na internet? Isso é crime!'},{parte:'Desenvolvimento',txt:'Rayka Passarini, advogada em direito digital. Podemos registrar BO digital, solicitar remoção de conteúdo e pedir indenização.'},{parte:'CTA',txt:'Me chama no direct agora! Quanto antes agir, mais fácil resolver.'}],
+     conteudos:[{n:1,tema:'Perfil hackeado — o que fazer nas primeiras horas',tipo:'Reels',prazo:'30/03'},{n:2,tema:'Crimes digitais e como se proteger',tipo:'Carrossel',prazo:'02/04'}]},
   ];
 
   const SESSOES = [
-    { id:1, dataStr:'19/03/2025', date:new Date(2025,2,19), hora:'09:00–10:30', advogados:[1,2,3,4],    tipo:'Gravação' },
-    { id:2, dataStr:'21/03/2025', date:new Date(2025,2,21), hora:'09:00–10:30', advogados:[5,6,7,8],    tipo:'Gravação' },
-    { id:3, dataStr:'24/03/2025', date:new Date(2025,2,24), hora:'09:00–10:30', advogados:[9,10,11,12], tipo:'Gravação' },
-    { id:4, dataStr:'26/03/2025', date:new Date(2025,2,26), hora:'09:00–10:30', advogados:[13,14,15,1], tipo:'Gravação' },
-    { id:5, dataStr:'02/04/2025', date:new Date(2025,3,2),  hora:'09:00–10:30', advogados:[1,5,9,13],   tipo:'Gravação' },
-    { id:6, dataStr:'04/04/2025', date:new Date(2025,3,4),  hora:'09:00–10:30', advogados:[2,6,10,14],  tipo:'Gravação' },
-    { id:7, dataStr:'07/04/2025', date:new Date(2025,3,7),  hora:'09:00–10:30', advogados:[3,7,11,15],  tipo:'Gravação' },
-    { id:8, dataStr:'09/04/2025', date:new Date(2025,3,9),  hora:'09:00–10:30', advogados:[4,8,12,1],   tipo:'Gravação' },
+    {id:1,dataStr:'19/03/2025',date:new Date(2025,2,19),hora:'09:00–10:30',advs:[1,2,3,4]},
+    {id:2,dataStr:'21/03/2025',date:new Date(2025,2,21),hora:'09:00–10:30',advs:[5,6,7,8]},
+    {id:3,dataStr:'24/03/2025',date:new Date(2025,2,24),hora:'09:00–10:30',advs:[9,10,11,12]},
+    {id:4,dataStr:'26/03/2025',date:new Date(2025,2,26),hora:'09:00–10:30',advs:[13,14,15,1]},
+    {id:5,dataStr:'02/04/2025',date:new Date(2025,3,2), hora:'09:00–10:30',advs:[1,5,9,13]},
+    {id:6,dataStr:'04/04/2025',date:new Date(2025,3,4), hora:'09:00–10:30',advs:[2,6,10,14]},
+    {id:7,dataStr:'07/04/2025',date:new Date(2025,3,7), hora:'09:00–10:30',advs:[3,7,11,15]},
+    {id:8,dataStr:'09/04/2025',date:new Date(2025,3,9), hora:'09:00–10:30',advs:[4,8,12,1]},
   ];
 
-  // Color palette for event cards (cycles by session id)
-  const COLORS = [
-    { bg:'#d1fae5', border:'#059669', text:'#065f46', av:'#059669' },
-    { bg:'#fef3c7', border:'#d97706', text:'#92400e', av:'#d97706' },
-    { bg:'#dbeafe', border:'#2563eb', text:'#1e40af', av:'#2563eb' },
-    { bg:'#fce7f3', border:'#db2777', text:'#9d174d', av:'#db2777' },
-    { bg:'#e8f5f4', border:'#2A7E78', text:'#1f5f5a', av:'#2A7E78' },
-    { bg:'#ede9fe', border:'#7c3aed', text:'#5b21b6', av:'#7c3aed' },
-    { bg:'#fef9c3', border:'#ca8a04', text:'#854d0e', av:'#ca8a04' },
-    { bg:'#fee2e2', border:'#dc2626', text:'#991b1b', av:'#dc2626' },
+  const COLS = [
+    {bg:'rgba(5,150,105,.18)',  bd:'#059669', tx:'#6ee7b7', av:'#059669'},
+    {bg:'rgba(217,119,6,.16)',  bd:'#d97706', tx:'#fcd34d', av:'#d97706'},
+    {bg:'rgba(37,99,235,.18)',  bd:'#3b82f6', tx:'#93c5fd', av:'#3b82f6'},
+    {bg:'rgba(219,39,119,.16)', bd:'#ec4899', tx:'#f9a8d4', av:'#ec4899'},
+    {bg:'rgba(42,126,120,.2)',  bd:'#2A7E78', tx:'#6ee7e0', av:'#2A7E78'},
+    {bg:'rgba(124,58,237,.18)', bd:'#8b5cf6', tx:'#c4b5fd', av:'#8b5cf6'},
+    {bg:'rgba(202,138,4,.16)',  bd:'#ca8a04', tx:'#fde68a', av:'#ca8a04'},
+    {bg:'rgba(220,38,38,.15)',  bd:'#dc2626', tx:'#fca5a5', av:'#dc2626'},
   ];
 
-  // ===== STATE =====
-  let currentUser = null;
-  let currentLawyerId = null;
-  let currentLawyer = null;
-  let attendanceData = {};
-  let currentView = 'week';
-  let currentWeekStart = null; // Monday of current week
-  let currentModalSessao = null;
+  // ═══════════════════════════════
+  //  STATE
+  // ═══════════════════════════════
+  let lawyerId = null;
+  let lawyer = null;
+  let attendance = {};
+  let view = 'month';
+  let weekStart = null;
+  let modalSession = null;
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const DNAMES = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 
-  // ===== INIT =====
+  // ═══════════════════════════════
+  //  INIT
+  // ═══════════════════════════════
   async function init() {
     if (USE_SUPABASE) {
-      // --- Modo Supabase ---
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) { window.location.href = 'index.html'; return; }
-      currentUser = session.user;
-      const { data: profile } = await sb.from('profiles').select('lawyer_id').eq('id', currentUser.id).single();
-      if (!profile) { window.location.href = 'index.html'; return; }
-      currentLawyerId = profile.lawyer_id;
+      const { data:{ session } } = await sb.auth.getSession();
+      if (!session) { window.location.href='index.html'; return; }
+      const { data:p } = await sb.from('profiles').select('lawyer_id').eq('id',session.user.id).single();
+      if (!p) { window.location.href='index.html'; return; }
+      lawyerId = p.lawyer_id;
     } else {
-      // --- Modo localStorage ---
-      const saved = localStorage.getItem('qv_lawyer_id');
-      if (!saved) { showLawyerPicker(); return; }
-      currentLawyerId = parseInt(saved);
+      const s = localStorage.getItem('qv_lawyer_id');
+      if (!s) { showPicker(); return; }
+      lawyerId = parseInt(s);
     }
-
-    currentLawyer = ADVOGADOS.find(a => a.id === currentLawyerId);
-    await loadAttendance();
-    setupCurrentWeek();
-    renderSidebar();
+    lawyer = ADVS.find(a => a.id === lawyerId);
+    loadAttendance();
+    setWeekToday();
+    renderHeader();
+    renderStats();
     renderCalendar();
-    renderRightPanel();
-
+    renderRP();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
   }
 
-  // ===== LAWYER PICKER (modo sem login) =====
-  function showLawyerPicker() {
+  function showPicker() {
     document.getElementById('loadingScreen').innerHTML = `
-      <div style="background:#fff;border-radius:24px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.1);text-align:center">
-        <div style="font-size:2.5rem;margin-bottom:.75rem">⚖️</div>
-        <div style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:.25rem">Queiroz Advogados</div>
-        <div style="font-size:.85rem;color:#94a3b8;margin-bottom:1.75rem">Selecione seu nome para continuar</div>
-        <select id="pickerSelect" style="width:100%;padding:.85rem 1rem;border-radius:12px;border:1px solid #e2e8f0;font-size:.9rem;font-family:Inter,sans-serif;color:#1e293b;background:#f8fafc;outline:none;margin-bottom:1rem;appearance:none;cursor:pointer">
+      <div class="picker-card">
+        <div style="font-size:2.5rem;margin-bottom:.5rem;filter:drop-shadow(0 0 16px var(--glow))">⚖️</div>
+        <div style="font-size:1rem;font-weight:800;margin-bottom:.25rem">Queiroz Advogados</div>
+        <div style="font-size:.8rem;color:var(--mu)">Selecione seu nome para entrar</div>
+        <select class="picker-select" id="pick">
           <option value="">— Selecione seu nome —</option>
-          ${ADVOGADOS.map(a => `<option value="${a.id}">${a.nome}</option>`).join('')}
+          ${ADVS.map(a=>`<option value="${a.id}">${a.nome}</option>`).join('')}
         </select>
-        <button onclick="confirmPicker()" style="width:100%;padding:.9rem;border-radius:12px;background:linear-gradient(135deg,#2A7E78,#3a9e97);color:#fff;font-size:.95rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(42,126,120,.35)">
-          Entrar no Calendário →
-        </button>
+        <button class="picker-btn" onclick="confirmPick()">Entrar no Calendário →</button>
       </div>`;
   }
 
-  function confirmPicker() {
-    const val = document.getElementById('pickerSelect').value;
-    if (!val) { alert('Selecione seu nome'); return; }
-    localStorage.setItem('qv_lawyer_id', val);
-    init();
+  function confirmPick() {
+    const v = document.getElementById('pick').value;
+    if (!v) return;
+    localStorage.setItem('qv_lawyer_id', v);
+    location.reload();
   }
 
-  function setupCurrentWeek() {
-    // Default to week containing first session
-    const today = new Date();
-    const d = new Date(today);
-    const dow = d.getDay(); // 0=Sun
-    const diff = dow === 0 ? -6 : 1 - dow;
-    d.setDate(d.getDate() + diff);
-    d.setHours(0,0,0,0);
-    currentWeekStart = d;
+  // ═══════════════════════════════
+  //  HEADER
+  // ═══════════════════════════════
+  function renderHeader() {
+    if (!lawyer) return;
+    const parts = lawyer.nome.split(' ');
+    const init = parts.map(w=>w[0]).slice(0,2).join('');
+    ['sidebarAv','topbarAv'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=init; });
+    document.getElementById('sidebarName').textContent = parts[0]+' '+parts[parts.length-1];
   }
 
-  // ===== SIDEBAR =====
-  function renderSidebar() {
-    if (!currentLawyer) return;
-    const parts = currentLawyer.nome.split(' ');
-    const initials = parts.length >= 2 ? parts[0][0]+parts[1][0] : parts[0][0];
-    ['sidebarInitials','topbarInitials'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=initials; });
-    const n = document.getElementById('sidebarName'); if(n) n.textContent = parts[0]+' '+parts[parts.length-1];
+  // ═══════════════════════════════
+  //  STATS
+  // ═══════════════════════════════
+  function renderStats() {
+    if (!lawyer) return;
+    const mine = SESSOES.filter(s=>s.advs.includes(lawyerId));
+    const pres = mine.filter(s=>attendance[s.id]==='presente').length;
+    const prio = lawyer.prio === 'urgente' ? '🔴 Urgente' : lawyer.prio === 'alto' ? '🟡 Alta' : '🟢 Normal';
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-card"><div class="stat-icon">🎬</div><div class="stat-num">${mine.length}</div><div class="stat-label">Sessões agendadas</div></div>
+      <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num">${pres}</div><div class="stat-label">Presenças confirmadas</div></div>
+      <div class="stat-card"><div class="stat-icon">📌</div><div class="stat-num">${lawyer.prazo}</div><div class="stat-label">Prazo do conteúdo</div></div>
+      <div class="stat-card"><div class="stat-icon">⚡</div><div class="stat-num" style="font-size:1rem;padding-top:.25rem">${prio}</div><div class="stat-label">Prioridade</div></div>
+    `;
   }
 
-  // ===== ATTENDANCE =====
-  async function loadAttendance() {
-    if (USE_SUPABASE && currentUser) {
-      const { data } = await sb.from('attendance').select('sessao_id,estado').eq('user_id', currentUser.id);
-      attendanceData = {};
-      if (data) data.forEach(r => { attendanceData[r.sessao_id] = r.estado; });
-    } else {
-      // localStorage fallback
-      const saved = localStorage.getItem('qv_attendance_' + currentLawyerId);
-      attendanceData = saved ? JSON.parse(saved) : {};
-    }
+  // ═══════════════════════════════
+  //  ATTENDANCE
+  // ═══════════════════════════════
+  function loadAttendance() {
+    if (USE_SUPABASE) return; // handled async elsewhere
+    const s = localStorage.getItem('qv_att_'+lawyerId);
+    attendance = s ? JSON.parse(s) : {};
   }
-
-  function saveAttendanceLocal() {
-    localStorage.setItem('qv_attendance_' + currentLawyerId, JSON.stringify(attendanceData));
+  function saveAttendance() {
+    localStorage.setItem('qv_att_'+lawyerId, JSON.stringify(attendance));
   }
 
   async function setPresence(estado) {
-    if (!currentModalSessao) return;
-    const sid = currentModalSessao.id;
-    attendanceData[sid] = estado;
-
-    const bp = document.getElementById('btnPresente');
-    const ba = document.getElementById('btnAusente');
-    bp.className = 'presence-btn ' + (estado === 'presente' ? 'selected-present' : 'present');
-    ba.className = 'presence-btn ' + (estado === 'ausente' ? 'selected-absent' : 'absent');
-
-    if (USE_SUPABASE && currentUser) {
-      try {
-        await sb.from('attendance').upsert({ user_id: currentUser.id, sessao_id: sid, estado, updated_at: new Date().toISOString() }, { onConflict: 'user_id,sessao_id' });
-      } catch { showToast('Erro ao salvar', true); return; }
-    } else {
-      saveAttendanceLocal();
-    }
+    if (!modalSession) return;
+    const sid = modalSession.id;
+    attendance[sid] = estado;
+    saveAttendance();
+    document.getElementById('btnP').className = 'pres-btn ' + (estado==='presente' ? 'sel-present' : 'opt-present');
+    document.getElementById('btnA').className = 'pres-btn ' + (estado==='ausente'  ? 'sel-absent'  : 'opt-absent');
     showToast('✓ Presença salva!');
-    renderRightPanel();
+    renderRP();
+    renderStats();
     renderCalendar();
   }
 
-  // ===== NAVIGATION =====
+  // ═══════════════════════════════
+  //  NAVIGATION
+  // ═══════════════════════════════
+  function setWeekToday() {
+    const d = new Date(); const dow = d.getDay();
+    d.setDate(d.getDate() - (dow===0 ? 6 : dow-1));
+    d.setHours(0,0,0,0); weekStart = d;
+  }
+
   function navigate(dir) {
-    if (currentView === 'week') {
-      currentWeekStart = new Date(currentWeekStart);
-      currentWeekStart.setDate(currentWeekStart.getDate() + dir * 7);
+    if (view==='week') {
+      weekStart = new Date(weekStart); weekStart.setDate(weekStart.getDate()+dir*7);
     } else {
-      const d = new Date(currentWeekStart);
-      d.setMonth(d.getMonth() + dir, 1);
-      currentWeekStart = d;
+      const d = new Date(weekStart); d.setDate(1); d.setMonth(d.getMonth()+dir); weekStart = d;
     }
     renderCalendar();
   }
 
   function setView(v) {
-    currentView = v;
-    document.getElementById('btnWeek').classList.toggle('active', v==='week');
-    document.getElementById('btnMonth').classList.toggle('active', v==='month');
-    // Nav items
-    document.querySelectorAll('.nav-item').forEach((el,i) => el.classList.toggle('active', i===1));
+    view = v;
+    document.getElementById('vpWeek').classList.toggle('active', v==='week');
+    document.getElementById('vpMonth').classList.toggle('active', v==='month');
     renderCalendar();
   }
 
-  // ===== CALENDAR RENDER =====
+  // ═══════════════════════════════
+  //  CALENDAR
+  // ═══════════════════════════════
   function renderCalendar() {
-    if (currentView === 'week') renderWeek();
-    else renderMonth();
+    view === 'week' ? renderWeek() : renderMonth();
   }
 
-  function renderWeek() {
-    const ws = currentWeekStart;
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(ws);
-      d.setDate(ws.getDate() + i);
-      days.push(d);
-    }
-
-    // Title
-    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const startM = months[days[0].getMonth()];
-    const endM = months[days[6].getMonth()];
-    const yr = days[0].getFullYear();
-    document.getElementById('calMonthTitle').textContent = startM === endM
-      ? `${startM}, ${yr}` : `${startM} – ${endM}, ${yr}`;
-
-    const today = new Date(); today.setHours(0,0,0,0);
-    const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    const timeSlots = ['09:00','10:00','11:00','12:00'];
-
-    // Build days header
-    let daysHeader = `<div class="days-header-corner"></div>`;
-    days.forEach(d => {
-      const isToday = d.getTime() === today.getTime();
-      daysHeader += `<div class="day-col-head ${isToday?'today':''}">
-        <div class="day-name">${dayNames[d.getDay()]}</div>
-        <div class="day-num">${d.getDate()}</div>
-      </div>`;
-    });
-
-    // Build time rows
-    let timeRows = '';
-    timeSlots.forEach((t, ti) => {
-      timeRows += `<div class="time-label">${t}</div>`;
-      days.forEach(d => {
-        // Find session on this day at this time slot
-        const sessaoNow = SESSOES.find(s => {
-          const sd = new Date(s.date); sd.setHours(0,0,0,0);
-          return sd.getTime() === d.getTime();
-        });
-
-        let cellContent = '';
-        if (sessaoNow && ti === 0) { // sessions at 09:00
-          const isMine = sessaoNow.advogados.includes(currentLawyerId);
-          const col = COLORS[(sessaoNow.id - 1) % COLORS.length];
-          const advNamesShort = sessaoNow.advogados.slice(0, 3).map(id => {
-            const a = ADVOGADOS.find(x => x.id === id);
-            return a ? a.nome.split(' ')[0] : '?';
-          }).join(', ');
-
-          // Avatars
-          const avatars = sessaoNow.advogados.slice(0, 4).map(id => {
-            const a = ADVOGADOS.find(x => x.id === id);
-            const initials = a ? a.nome.split(' ').map(w=>w[0]).slice(0,2).join('') : '?';
-            const isMe = id === currentLawyerId;
-            return `<div class="ev-av" style="background:${isMe ? col.border : col.av};opacity:${isMe?1:0.7}">${initials}</div>`;
-          }).join('');
-
-          const presState = attendanceData[sessaoNow.id];
-          const presIcon = presState === 'presente' ? '✓' : presState === 'ausente' ? '✗' : '';
-
-          cellContent = `
-            <div class="event-card tall ${isMine?'mine-event':''}"
-              style="background:${col.bg};border-left-color:${col.border}"
-              onclick="openSessionModal(${sessaoNow.id})">
-              <div class="event-code" style="color:${col.border}">#S${sessaoNow.id.toString().padStart(3,'0')} ${presIcon}</div>
-              <div class="event-title" style="color:${col.text}">${sessaoNow.tipo}</div>
-              <div class="event-time" style="color:${col.border}">📹 ${sessaoNow.hora}</div>
-              <div style="font-size:.68rem;color:${col.text};opacity:.75;margin-bottom:.4rem;line-height:1.4">${advNamesShort}...</div>
-              <div class="event-avatars">${avatars}</div>
-            </div>`;
-        }
-
-        timeRows += `<div class="time-cell">${cellContent}</div>`;
-      });
-    });
-
-    document.getElementById('calContainer').innerHTML = `
-      <div class="week-grid">
-        <div class="days-header">${daysHeader}</div>
-        <div class="time-grid">${timeRows}</div>
-      </div>`;
+  function sameDay(a,b) {
+    return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
   }
 
+  /* ── MONTH ── */
   function renderMonth() {
-    const d = new Date(currentWeekStart);
-    d.setDate(1);
-    const month = d.getMonth();
-    const year = d.getFullYear();
-    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    document.getElementById('calMonthTitle').textContent = `${months[month]}, ${year}`;
+    const ref = new Date(weekStart); ref.setDate(1);
+    const month = ref.getMonth(), year = ref.getFullYear();
+    document.getElementById('calTitle').textContent = `${MONTHS[month]}, ${year}`;
 
     const today = new Date(); today.setHours(0,0,0,0);
-    const firstDow = d.getDay(); // 0=Sun
+    const firstDow = ref.getDay();
     const daysInMonth = new Date(year, month+1, 0).getDate();
-    const prevMonthDays = new Date(year, month, 0).getDate();
+    const prevDays = new Date(year, month, 0).getDate();
 
-    const dayNames = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-    let head = dayNames.map(n => `<div class="month-head-day">${n}</div>`).join('');
-
+    let headHtml = DNAMES.map(n=>`<div class="cal-day-name">${n}</div>`).join('');
     let cells = '';
-    // Prev month padding
-    for (let i = firstDow - 1; i >= 0; i--) {
-      cells += `<div class="month-cell other-month"><div class="month-num">${prevMonthDays - i}</div></div>`;
-    }
 
-    for (let day = 1; day <= daysInMonth; day++) {
-      const cellDate = new Date(year, month, day);
-      const isToday = cellDate.getTime() === today.getTime();
-      const sessionsOnDay = SESSOES.filter(s => {
-        const sd = new Date(s.date); sd.setHours(0,0,0,0);
-        return sd.getTime() === cellDate.getTime();
-      });
+    for (let i=firstDow-1; i>=0; i--)
+      cells += `<div class="cal-cell other"><div class="cell-num">${prevDays-i}</div></div>`;
 
-      let eventsHtml = '';
-      sessionsOnDay.forEach(s => {
-        const col = COLORS[(s.id-1) % COLORS.length];
-        const isMine = s.advogados.includes(currentLawyerId);
-        const pres = attendanceData[s.id];
-        eventsHtml += `<div class="month-event ${isMine?'mine-event':''}"
-          style="background:${col.bg};border-left-color:${col.border};color:${col.text}"
-          onclick="openSessionModal(${s.id})">
-          ${isMine?'★ ':''}S${s.id} ${pres==='presente'?'✓':pres==='ausente'?'✗':''}
+    for (let d=1; d<=daysInMonth; d++) {
+      const dt = new Date(year,month,d); dt.setHours(0,0,0,0);
+      const isToday = sameDay(dt, today);
+      const sessions = SESSOES.filter(s=>{ const sd=new Date(s.date); sd.setHours(0,0,0,0); return sd.getTime()===dt.getTime(); });
+
+      let pills = sessions.map(s=>{
+        const col = COLS[(s.id-1)%COLS.length];
+        const mine = s.advs.includes(lawyerId);
+        const pres = attendance[s.id];
+        const icon = pres==='presente'?'✓':pres==='ausente'?'✗':'';
+        return `<div class="ev-pill ${mine?'ev-mine':''}"
+          style="background:${col.bg};border-left-color:${col.bd};color:${col.tx}"
+          onclick="openSession(${s.id})">
+          <div class="ev-dot" style="background:${col.bd}"></div>
+          ${mine?'★ ':''}S${s.id} ${icon}
         </div>`;
-      });
+      }).join('');
 
-      cells += `<div class="month-cell ${isToday?'today-cell':''}">
-        <div class="month-num">${day}</div>
-        ${eventsHtml}
+      cells += `<div class="cal-cell ${isToday?'today':''}">
+        <div class="cell-num">${d}</div>${pills}
       </div>`;
     }
 
-    // Next month padding
-    const totalCells = firstDow + daysInMonth;
-    const remaining = (7 - (totalCells % 7)) % 7;
-    for (let i = 1; i <= remaining; i++) {
-      cells += `<div class="month-cell other-month"><div class="month-num">${i}</div></div>`;
-    }
+    const total = firstDow + daysInMonth;
+    const rem = (7-(total%7))%7;
+    for (let i=1; i<=rem; i++)
+      cells += `<div class="cal-cell other"><div class="cell-num">${i}</div></div>`;
 
     document.getElementById('calContainer').innerHTML = `
-      <div class="month-view">
-        <div class="month-head">${head}</div>
-        <div class="month-grid">${cells}</div>
+      <div class="cal-wrap">
+        <div class="cal-days-head">${headHtml}</div>
+        <div class="cal-month-grid">${cells}</div>
       </div>`;
   }
 
-  // ===== RIGHT PANEL =====
-  function renderRightPanel() {
-    if (!currentLawyer) return;
-    const mySessoes = SESSOES.filter(s => s.advogados.includes(currentLawyerId));
-    const presente = mySessoes.filter(s => attendanceData[s.id] === 'presente').length;
-    const pct = mySessoes.length ? Math.round(presente/mySessoes.length*100) : 0;
+  /* ── WEEK ── */
+  function renderWeek() {
+    const days = [];
+    for (let i=0; i<7; i++) { const d=new Date(weekStart); d.setDate(weekStart.getDate()+i); days.push(d); }
+    const today = new Date(); today.setHours(0,0,0,0);
+    const sm = MONTHS[days[0].getMonth()], em = MONTHS[days[6].getMonth()];
+    document.getElementById('calTitle').textContent = sm===em ? `${sm}, ${days[0].getFullYear()}` : `${sm} – ${em}`;
 
-    document.getElementById('rpSub').textContent = `${mySessoes.length} sessões agendadas`;
-    document.getElementById('assiPct').textContent = pct + '%';
-    document.getElementById('assiBarFill').style.width = pct + '%';
-    document.getElementById('assiDetail').textContent = `${presente} de ${mySessoes.length} sessões`;
+    let head = `<div class="week-corner"></div>` +
+      days.map(d=>{
+        const isTd = sameDay(d,today);
+        return `<div class="week-day-col ${isTd?'today':''}">
+          <div class="wdc-name">${DNAMES[d.getDay()]}</div>
+          <div class="wdc-num">${d.getDate()}</div>
+        </div>`;
+      }).join('');
 
-    document.getElementById('rpBody').innerHTML = mySessoes.map(s => {
-      const isMine = true;
-      const others = s.advogados.filter(id => id !== currentLawyerId).map(id => ADVOGADOS.find(a=>a.id===id)?.nome.split(' ')[0]).join(', ');
-      const pres = attendanceData[s.id];
-      const presLabel = pres === 'presente' ? '<span class="ms-badge">✓ Presente</span>' : pres === 'ausente' ? '<span class="ms-badge" style="background:#ef4444">✗ Ausente</span>' : '';
-      const col = COLORS[(s.id-1) % COLORS.length];
-      return `<div class="mini-session mine-session" onclick="openSessionModal(${s.id})" style="border-left:3px solid ${col.border}">
-        <div class="ms-date">📅 ${s.dataStr}</div>
-        <div class="ms-time">🎬 ${s.hora}</div>
-        <div class="ms-advs">Com: ${others}</div>
-        ${presLabel}
+    const times = ['08:00','09:00','10:00','11:00','12:00'];
+    let body = '';
+    times.forEach((t,ti) => {
+      body += `<div class="week-time">${t}</div>`;
+      days.forEach(d => {
+        const sess = SESSOES.find(s=>{ const sd=new Date(s.date); sd.setHours(0,0,0,0); return sameDay(sd,d); });
+        let inner = '';
+        if (sess && ti===1) { // 09:00
+          const col = COLS[(sess.id-1)%COLS.length];
+          const mine = sess.advs.includes(lawyerId);
+          const avs = sess.advs.slice(0,4).map(id=>{
+            const a = ADVS.find(x=>x.id===id);
+            const ini = a ? a.nome.split(' ').map(w=>w[0]).slice(0,2).join('') : '?';
+            return `<div class="we-av" style="background:${id===lawyerId?col.bd:col.av};opacity:${id===lawyerId?1:.65}">${ini}</div>`;
+          }).join('');
+          const pres = attendance[sess.id];
+          const icon = pres==='presente'?' ✓':pres==='ausente'?' ✗':'';
+          inner = `<div class="week-event ${mine?'mine':''}"
+            style="background:${col.bg};border-left-color:${col.bd}"
+            onclick="openSession(${sess.id})">
+            <div class="we-code" style="color:${col.bd}">#S${String(sess.id).padStart(3,'0')}${icon}</div>
+            <div class="we-title" style="color:${col.tx}">📹 Gravação</div>
+            <div class="we-time" style="color:${col.bd}">${sess.hora}</div>
+            <div class="we-avs">${avs}</div>
+          </div>`;
+        }
+        body += `<div class="week-cell">${inner}</div>`;
+      });
+    });
+
+    document.getElementById('calContainer').innerHTML = `
+      <div class="week-wrap">
+        <div class="week-head">${head}</div>
+        <div class="week-body">${body}</div>
+      </div>`;
+  }
+
+  // ═══════════════════════════════
+  //  RIGHT PANEL
+  // ═══════════════════════════════
+  function renderRP() {
+    if (!lawyer) return;
+    const mine = SESSOES.filter(s=>s.advs.includes(lawyerId));
+    const pres = mine.filter(s=>attendance[s.id]==='presente').length;
+    const pct = mine.length ? Math.round(pres/mine.length*100) : 0;
+    const circ = 138.2, offset = circ - (pct/100)*circ;
+
+    document.getElementById('rpSub').textContent = `${mine.length} sessões agendadas`;
+    document.getElementById('assiPct').textContent = pct+'%';
+    document.getElementById('assiSub').textContent = `${pres} de ${mine.length} sessões`;
+    document.getElementById('assiRingText').textContent = pct+'%';
+    document.getElementById('assiRingFill').style.strokeDashoffset = offset;
+
+    document.getElementById('rpBody').innerHTML = mine.map((s,i) => {
+      const col = COLS[(s.id-1)%COLS.length];
+      const others = s.advs.filter(id=>id!==lawyerId).map(id=>ADVS.find(a=>a.id===id)?.nome.split(' ')[0]).join(', ');
+      const st = attendance[s.id];
+      const badge = st==='presente' ? '<div class="rps-badge present">✓ Presente</div>'
+        : st==='ausente' ? '<div class="rps-badge absent">✗ Ausente</div>'
+        : '<div class="rps-badge pending">— Pendente</div>';
+      return `<div class="rp-session mine" onclick="openSession(${s.id})"
+        style="animation-delay:${i*.06}s;border-left-color:${col.bd}">
+        <div class="rps-date">📅 ${s.dataStr}</div>
+        <div class="rps-time">🎬 ${s.hora}</div>
+        <div class="rps-names">Com: ${others||'—'}</div>
+        ${badge}
       </div>`;
     }).join('');
   }
 
-  // ===== SESSION MODAL =====
-  function openSessionModal(sessaoId) {
-    const s = SESSOES.find(x => x.id === sessaoId);
+  // ═══════════════════════════════
+  //  SESSION MODAL
+  // ═══════════════════════════════
+  function openSession(id) {
+    const s = SESSOES.find(x=>x.id===id);
     if (!s) return;
-    currentModalSessao = s;
-    const isMine = s.advogados.includes(currentLawyerId);
+    modalSession = s;
+    const mine = s.advs.includes(lawyerId);
+    const col = COLS[(s.id-1)%COLS.length];
 
-    document.getElementById('modalTitle').textContent = `Sessão #S${String(sessaoId).padStart(3,'0')}`;
-    document.getElementById('modalDate').innerHTML = `📅 ${s.dataStr} &nbsp;·&nbsp; ${s.tipo}`;
-    document.getElementById('modalTime').textContent = s.hora;
+    document.getElementById('mTitle').textContent = `Sessão #S${String(id).padStart(3,'0')}`;
+    document.getElementById('mDate').textContent = `📅 ${s.dataStr}  ·  Gravação de Stories`;
+    document.getElementById('mTime').textContent = s.hora;
 
-    const col = COLORS[(s.id-1) % COLORS.length];
-    const advHtml = s.advogados.map(id => {
-      const a = ADVOGADOS.find(x => x.id === id);
-      if (!a) return '';
-      const initials = a.nome.split(' ').map(w=>w[0]).slice(0,2).join('');
-      const isMe = id === currentLawyerId;
+    document.getElementById('mAdvs').innerHTML = s.advs.map(aid=>{
+      const a = ADVS.find(x=>x.id===aid);
+      const ini = a ? a.nome.split(' ').map(w=>w[0]).slice(0,2).join('') : '?';
+      const isMe = aid===lawyerId;
       return `<div class="modal-adv ${isMe?'me':''}">
-        <div class="modal-adv-av" style="background:${col.av}">${initials}</div>
-        <div class="modal-adv-name">${a.nome}</div>
-        ${isMe ? '<div class="modal-adv-me">Você</div>' : ''}
+        <div class="modal-adv-av" style="background:${isMe?col.bd:col.av}">${ini}</div>
+        <div class="modal-adv-name">${a?a.nome:'?'}</div>
+        ${isMe?'<div class="modal-adv-you">Você</div>':''}
       </div>`;
     }).join('');
-    document.getElementById('modalAdvs').innerHTML = advHtml;
 
-    const presDiv = document.getElementById('modalPresence');
-    if (isMine) {
-      presDiv.style.display = 'block';
-      const pres = attendanceData[s.id];
-      document.getElementById('btnPresente').className = 'presence-btn ' + (pres==='presente' ? 'selected-present' : 'present');
-      document.getElementById('btnAusente').className = 'presence-btn ' + (pres==='ausente' ? 'selected-absent' : 'absent');
-    } else {
-      presDiv.style.display = 'none';
-    }
+    const mPres = document.getElementById('mPres');
+    if (mine) {
+      mPres.style.display = 'block';
+      const st = attendance[s.id];
+      document.getElementById('btnP').className = 'pres-btn ' + (st==='presente'?'sel-present':'opt-present');
+      document.getElementById('btnA').className = 'pres-btn ' + (st==='ausente'?'sel-absent':'opt-absent');
+    } else mPres.style.display = 'none';
 
-    document.getElementById('sessionModal').classList.add('open');
+    openModal('modalSession');
   }
 
-  function closeSessionModal(e) {
-    if (!e || e.target === document.getElementById('sessionModal')) {
-      document.getElementById('sessionModal').classList.remove('open');
-    }
-  }
-
-  // ===== ASSIDUIDADE MODAL =====
+  // ═══════════════════════════════
+  //  ASSIDUIDADE MODAL
+  // ═══════════════════════════════
   function openAssiModal() {
-    if (!currentLawyer) return;
-    const mySessoes = SESSOES.filter(s => s.advogados.includes(currentLawyerId));
-    const rows = mySessoes.map(s => {
-      const pres = attendanceData[s.id];
-      const icon = pres==='presente'?'<span style="color:#059669;font-weight:700">✓ Presente</span>':pres==='ausente'?'<span style="color:#ef4444;font-weight:700">✗ Ausente</span>':'<span style="color:#94a3b8">— Pendente</span>';
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem;border-radius:10px;border:1px solid #f1f5f9;margin-bottom:.5rem">
-        <div>
-          <div style="font-weight:700;font-size:.85rem">📅 ${s.dataStr}</div>
-          <div style="font-size:.75rem;color:#94a3b8;margin-top:.15rem">${s.hora} · Sessão ${s.id}</div>
-        </div>
-        <div>${icon}</div>
-      </div>`;
-    }).join('');
+    const mine = SESSOES.filter(s=>s.advs.includes(lawyerId));
+    const pres = mine.filter(s=>attendance[s.id]==='presente').length;
+    const pct = mine.length ? Math.round(pres/mine.length*100) : 0;
+    const circ = 138.2, offset = circ-(pct/100)*circ;
 
-    const presente = mySessoes.filter(s=>attendanceData[s.id]==='presente').length;
-    const pct = mySessoes.length ? Math.round(presente/mySessoes.length*100) : 0;
-
-    document.getElementById('assiModalContent').innerHTML = `
+    document.getElementById('mAssiContent').innerHTML = `
       <div style="text-align:center;padding:1rem 0 1.5rem">
-        <div style="font-size:3rem;font-weight:900;color:#2A7E78">${pct}%</div>
-        <div style="font-size:.82rem;color:#94a3b8;margin-top:.25rem">${presente} de ${mySessoes.length} sessões confirmadas</div>
-        <div style="height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;margin:1rem auto;max-width:200px">
-          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#2A7E78,#3a9e97);border-radius:99px"></div>
-        </div>
+        <svg width="80" height="80" viewBox="0 0 80 80" style="transform:rotate(-90deg)">
+          <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="6"/>
+          <circle cx="40" cy="40" r="34" fill="none" stroke="var(--pl)" stroke-width="6"
+            stroke-linecap="round"
+            stroke-dasharray="${2*Math.PI*34}"
+            stroke-dashoffset="${2*Math.PI*34-(pct/100)*2*Math.PI*34}"
+            style="transition:stroke-dashoffset .8s"/>
+        </svg>
+        <div style="font-size:2rem;font-weight:900;color:var(--pl);margin-top:.5rem">${pct}%</div>
+        <div style="font-size:.78rem;color:var(--mu)">${pres} de ${mine.length} sessões confirmadas</div>
       </div>
-      ${rows}
+      ${mine.map(s=>{
+        const st=attendance[s.id];
+        const icon=st==='presente'?'<span style="color:#34d399;font-weight:700">✓ Presente</span>':st==='ausente'?'<span style="color:#f87171;font-weight:700">✗ Ausente</span>':'<span style="color:var(--mu)">— Pendente</span>';
+        return `<div class="assi-row"><div><div class="assi-row-date">📅 ${s.dataStr}</div><div class="assi-row-time">${s.hora} · Sessão ${s.id}</div></div>${icon}</div>`;
+      }).join('')}
     `;
-    document.getElementById('assiModal').classList.add('open');
+    openModal('modalAssi');
   }
 
-  function closeAssiModal(e) {
-    if (!e || e.target === document.getElementById('assiModal')) {
-      document.getElementById('assiModal').classList.remove('open');
-    }
-  }
-
-  // ===== ROTEIRO MODAL =====
+  // ═══════════════════════════════
+  //  ROTEIRO MODAL
+  // ═══════════════════════════════
   function openRoteiro() {
-    if (!currentLawyer || !currentLawyer.roteiro) return;
-    document.getElementById('roteiroModalTitle').textContent = `Roteiro — ${currentLawyer.nome.split(' ')[0]}`;
-    const fullText = currentLawyer.roteiro.map(r=>r.texto).join('\n\n');
-    document.getElementById('roteiroModalContent').innerHTML = `
-      <div style="margin-bottom:1.25rem;padding:.85rem;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0">
-        <div style="font-size:.72rem;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem">Tema</div>
-        <div style="font-size:.92rem;font-weight:700">${currentLawyer.tema}</div>
-        <div style="display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap">
-          <span style="padding:.2rem .6rem;border-radius:99px;font-size:.72rem;font-weight:600;background:#e8f5f4;color:#2A7E78;border:1px solid rgba(42,126,120,.3)">${currentLawyer.formato}</span>
-          <span style="padding:.2rem .6rem;border-radius:99px;font-size:.72rem;font-weight:600;background:#e8f5f4;color:#2A7E78;border:1px solid rgba(42,126,120,.3)">⏱ ${currentLawyer.duracao}</span>
-          <span style="padding:.2rem .6rem;border-radius:99px;font-size:.72rem;font-weight:600;background:#fef3c7;color:#d97706;border:1px solid rgba(217,119,6,.3)">📌 Prazo: ${currentLawyer.prazo}</span>
+    if (!lawyer?.roteiro) return;
+    document.getElementById('mRotTitle').textContent = `Roteiro — ${lawyer.nome.split(' ')[0]}`;
+    const full = lawyer.roteiro.map(r=>r.txt).join('\n\n');
+    document.getElementById('mRotContent').innerHTML = `
+      <div style="background:var(--s2);border:1px solid var(--bd);border-radius:12px;padding:1rem;margin-bottom:1.25rem">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--p);margin-bottom:.35rem">Tema</div>
+        <div style="font-size:.92rem;font-weight:800;margin-bottom:.6rem">${lawyer.tema}</div>
+        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+          <span style="padding:.2rem .6rem;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(42,126,120,.15);border:1px solid rgba(42,126,120,.3);color:var(--pl)">${lawyer.formato}</span>
+          <span style="padding:.2rem .6rem;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(42,126,120,.15);border:1px solid rgba(42,126,120,.3);color:var(--pl)">⏱ ${lawyer.dur}</span>
+          <span style="padding:.2rem .6rem;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(217,119,6,.15);border:1px solid rgba(217,119,6,.3);color:#fcd34d">📌 Prazo: ${lawyer.prazo}</span>
         </div>
       </div>
-      <button onclick="copyText('${encodeURIComponent(fullText)}',this)" style="width:100%;padding:.65rem;border-radius:10px;font-size:.82rem;font-weight:700;background:#e8f5f4;border:1px solid rgba(42,126,120,.3);color:#2A7E78;cursor:pointer;margin-bottom:1rem;transition:all .2s" onmouseover="this.style.background='rgba(42,126,120,.15)'" onmouseout="this.style.background='#e8f5f4'">📋 Copiar roteiro completo</button>
-      ${currentLawyer.roteiro.map((r,i)=>`
-        <div style="background:#f8fafc;border-radius:12px;padding:1rem;border:1px solid #e2e8f0;margin-bottom:.75rem;position:relative">
-          <button onclick="copyText('${encodeURIComponent(r.texto)}',this)" style="position:absolute;top:.65rem;right:.65rem;padding:.25rem .6rem;border-radius:7px;font-size:.68rem;font-weight:700;background:#e8f5f4;border:1px solid rgba(42,126,120,.3);color:#2A7E78;cursor:pointer">📋 Copiar</button>
-          <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#2A7E78;margin-bottom:.4rem">Parte ${i+1} — ${r.parte}</div>
-          <div style="font-size:.88rem;line-height:1.75;color:#374151;padding-right:3.5rem">${r.texto}</div>
-        </div>
-      `).join('')}
+      <button onclick="copyText('${encodeURIComponent(full)}',this)" style="width:100%;padding:.65rem;border-radius:10px;font-size:.8rem;font-weight:700;background:rgba(42,126,120,.12);border:1px solid rgba(42,126,120,.3);color:var(--pl);cursor:pointer;margin-bottom:1.25rem;transition:all .2s" onmouseover="this.style.background='rgba(42,126,120,.22)'" onmouseout="this.style.background='rgba(42,126,120,.12)'">📋 Copiar roteiro completo</button>
+      ${lawyer.roteiro.map((r,i)=>`
+        <div class="rot-block">
+          <button class="copy-btn" onclick="copyText('${encodeURIComponent(r.txt)}',this)">📋 Copiar</button>
+          <div class="rot-tag">Parte ${i+1} — ${r.parte}</div>
+          <div class="rot-text">${r.txt}</div>
+        </div>`).join('')}
     `;
-    document.getElementById('roteiroModal').classList.add('open');
+    openModal('modalRoteiro');
   }
 
-  function closeRoteiroModal(e) {
-    if (!e || e.target === document.getElementById('roteiroModal')) {
-      document.getElementById('roteiroModal').classList.remove('open');
-    }
-  }
-
-  // ===== CONTEÚDO MODAL =====
+  // ═══════════════════════════════
+  //  CONTEÚDO MODAL
+  // ═══════════════════════════════
   function openConteudo() {
-    if (!currentLawyer || !currentLawyer.conteudos) return;
-    document.getElementById('conteudoModalContent').innerHTML = currentLawyer.conteudos.map((c,i) => {
-      const col = COLORS[i % COLORS.length];
-      return `<div style="padding:1rem;border-radius:12px;border:1px solid #e2e8f0;margin-bottom:.75rem;border-left:3px solid ${col.border}">
-        <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:${col.border};margin-bottom:.35rem">Conteúdo ${c.num}</div>
-        <div style="font-size:.95rem;font-weight:700;margin-bottom:.5rem">${c.tema}</div>
-        <div style="display:flex;gap:.4rem;flex-wrap:wrap">
-          <span style="padding:.2rem .55rem;border-radius:99px;font-size:.7rem;font-weight:600;background:#f1f5f9;color:#64748b">${c.tipo}</span>
-          <span style="padding:.2rem .55rem;border-radius:99px;font-size:.7rem;font-weight:600;background:#fef3c7;color:#d97706">📅 ${c.prazo}</span>
+    if (!lawyer?.conteudos) return;
+    document.getElementById('mContContent').innerHTML = lawyer.conteudos.map((c,i)=>{
+      const col = COLS[i%COLS.length];
+      return `<div style="padding:1rem;border-radius:12px;border:1px solid var(--bd);background:var(--s2);margin-bottom:.75rem;border-left:2.5px solid ${col.bd}">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${col.bd};margin-bottom:.35rem">Conteúdo ${c.n}</div>
+        <div style="font-size:.92rem;font-weight:800;margin-bottom:.5rem">${c.tema}</div>
+        <div style="display:flex;gap:.4rem">
+          <span style="padding:.2rem .55rem;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(255,255,255,.05);color:var(--mu)">${c.tipo}</span>
+          <span style="padding:.2rem .55rem;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(217,119,6,.15);color:#fcd34d">📅 ${c.prazo}</span>
         </div>
       </div>`;
     }).join('');
-    document.getElementById('conteudoModal').classList.add('open');
+    openModal('modalConteudo');
   }
 
-  function closeConteudoModal(e) {
-    if (!e || e.target === document.getElementById('conteudoModal')) {
-      document.getElementById('conteudoModal').classList.remove('open');
-    }
+  // ═══════════════════════════════
+  //  MODAL HELPERS
+  // ═══════════════════════════════
+  function openModal(id) { document.getElementById(id).classList.add('open'); }
+  function closeModal(id, e) {
+    if (!e || e.target === document.getElementById(id))
+      document.getElementById(id).classList.remove('open');
   }
 
-  // ===== UTILS =====
-  function copyText(encoded, btn) {
-    navigator.clipboard.writeText(decodeURIComponent(encoded)).then(() => {
+  // ═══════════════════════════════
+  //  UTILS
+  // ═══════════════════════════════
+  function copyText(enc, btn) {
+    navigator.clipboard.writeText(decodeURIComponent(enc)).then(()=>{
       const orig = btn.textContent;
-      btn.textContent = '✓ Copiado!';
-      btn.style.background = '#d1fae5';
-      btn.style.color = '#059669';
-      setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 2000);
+      btn.textContent = '✓ Copiado!'; btn.classList.add('copied');
+      setTimeout(()=>{ btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
     });
   }
 
-  function showToast(msg, isError=false) {
+  function showToast(msg, err=false) {
     const t = document.createElement('div');
-    t.className = 'toast' + (isError?' error':'');
-    t.textContent = msg;
+    t.className = 'toast'+(err?' err':''); t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(() => t.remove(), 2500);
+    setTimeout(()=>t.remove(), 2500);
   }
 
   async function doLogout() {
     if (USE_SUPABASE && sb) await sb.auth.signOut();
     localStorage.removeItem('qv_lawyer_id');
-    window.location.reload();
+    location.reload();
   }
 
-  // ===== START =====
+  // ═══════════════════════════════
+  //  START
+  // ═══════════════════════════════
   init();
 </script>
 </body>
