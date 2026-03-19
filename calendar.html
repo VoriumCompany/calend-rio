@@ -539,11 +539,12 @@
 </div>
 
 <script>
-  // ===== SUPABASE CONFIG =====
+  // ===== MODO SEM SUPABASE (localStorage) =====
+  // Quando Supabase estiver configurado, trocar USE_SUPABASE para true
+  const USE_SUPABASE = false;
   const SUPABASE_URL = 'COLE_SUA_URL_AQUI';
   const SUPABASE_ANON_KEY = 'COLE_SUA_CHAVE_AQUI';
-  const { createClient } = supabase;
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = USE_SUPABASE ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
   // ===== DATA =====
   const ADVOGADOS = [
@@ -628,15 +629,22 @@
 
   // ===== INIT =====
   async function init() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { window.location.href = 'index.html'; return; }
-    currentUser = session.user;
+    if (USE_SUPABASE) {
+      // --- Modo Supabase ---
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { window.location.href = 'index.html'; return; }
+      currentUser = session.user;
+      const { data: profile } = await sb.from('profiles').select('lawyer_id').eq('id', currentUser.id).single();
+      if (!profile) { window.location.href = 'index.html'; return; }
+      currentLawyerId = profile.lawyer_id;
+    } else {
+      // --- Modo localStorage ---
+      const saved = localStorage.getItem('qv_lawyer_id');
+      if (!saved) { showLawyerPicker(); return; }
+      currentLawyerId = parseInt(saved);
+    }
 
-    const { data: profile } = await sb.from('profiles').select('lawyer_id').eq('id', currentUser.id).single();
-    if (!profile) { window.location.href = 'index.html'; return; }
-    currentLawyerId = profile.lawyer_id;
     currentLawyer = ADVOGADOS.find(a => a.id === currentLawyerId);
-
     await loadAttendance();
     setupCurrentWeek();
     renderSidebar();
@@ -645,6 +653,30 @@
 
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+  }
+
+  // ===== LAWYER PICKER (modo sem login) =====
+  function showLawyerPicker() {
+    document.getElementById('loadingScreen').innerHTML = `
+      <div style="background:#fff;border-radius:24px;padding:2.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.1);text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:.75rem">⚖️</div>
+        <div style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:.25rem">Queiroz Advogados</div>
+        <div style="font-size:.85rem;color:#94a3b8;margin-bottom:1.75rem">Selecione seu nome para continuar</div>
+        <select id="pickerSelect" style="width:100%;padding:.85rem 1rem;border-radius:12px;border:1px solid #e2e8f0;font-size:.9rem;font-family:Inter,sans-serif;color:#1e293b;background:#f8fafc;outline:none;margin-bottom:1rem;appearance:none;cursor:pointer">
+          <option value="">— Selecione seu nome —</option>
+          ${ADVOGADOS.map(a => `<option value="${a.id}">${a.nome}</option>`).join('')}
+        </select>
+        <button onclick="confirmPicker()" style="width:100%;padding:.9rem;border-radius:12px;background:linear-gradient(135deg,#2A7E78,#3a9e97);color:#fff;font-size:.95rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(42,126,120,.35)">
+          Entrar no Calendário →
+        </button>
+      </div>`;
+  }
+
+  function confirmPicker() {
+    const val = document.getElementById('pickerSelect').value;
+    if (!val) { alert('Selecione seu nome'); return; }
+    localStorage.setItem('qv_lawyer_id', val);
+    init();
   }
 
   function setupCurrentWeek() {
@@ -669,10 +701,19 @@
 
   // ===== ATTENDANCE =====
   async function loadAttendance() {
-    if (!currentUser) return;
-    const { data } = await sb.from('attendance').select('sessao_id,estado').eq('user_id', currentUser.id);
-    attendanceData = {};
-    if (data) data.forEach(r => { attendanceData[r.sessao_id] = r.estado; });
+    if (USE_SUPABASE && currentUser) {
+      const { data } = await sb.from('attendance').select('sessao_id,estado').eq('user_id', currentUser.id);
+      attendanceData = {};
+      if (data) data.forEach(r => { attendanceData[r.sessao_id] = r.estado; });
+    } else {
+      // localStorage fallback
+      const saved = localStorage.getItem('qv_attendance_' + currentLawyerId);
+      attendanceData = saved ? JSON.parse(saved) : {};
+    }
+  }
+
+  function saveAttendanceLocal() {
+    localStorage.setItem('qv_attendance_' + currentLawyerId, JSON.stringify(attendanceData));
   }
 
   async function setPresence(estado) {
@@ -680,17 +721,19 @@
     const sid = currentModalSessao.id;
     attendanceData[sid] = estado;
 
-    // Update buttons
     const bp = document.getElementById('btnPresente');
     const ba = document.getElementById('btnAusente');
     bp.className = 'presence-btn ' + (estado === 'presente' ? 'selected-present' : 'present');
     ba.className = 'presence-btn ' + (estado === 'ausente' ? 'selected-absent' : 'absent');
 
-    try {
-      await sb.from('attendance').upsert({ user_id: currentUser.id, sessao_id: sid, estado, updated_at: new Date().toISOString() }, { onConflict: 'user_id,sessao_id' });
-      showToast('✓ Presença salva!');
-    } catch { showToast('Erro ao salvar', true); }
-
+    if (USE_SUPABASE && currentUser) {
+      try {
+        await sb.from('attendance').upsert({ user_id: currentUser.id, sessao_id: sid, estado, updated_at: new Date().toISOString() }, { onConflict: 'user_id,sessao_id' });
+      } catch { showToast('Erro ao salvar', true); return; }
+    } else {
+      saveAttendanceLocal();
+    }
+    showToast('✓ Presença salva!');
     renderRightPanel();
     renderCalendar();
   }
@@ -1055,8 +1098,9 @@
   }
 
   async function doLogout() {
-    await sb.auth.signOut();
-    window.location.href = 'index.html';
+    if (USE_SUPABASE && sb) await sb.auth.signOut();
+    localStorage.removeItem('qv_lawyer_id');
+    window.location.reload();
   }
 
   // ===== START =====
