@@ -717,7 +717,7 @@
       <div class="s-av" id="sidebarAv">?</div>
       <div>
         <div class="s-user-name" id="sidebarName">...</div>
-        <div class="s-user-role">Advogado(a)</div>
+        <div class="s-user-role" id="sidebarRole">Advogado(a)</div>
       </div>
       <button class="s-out" onclick="doLogout()" title="Sair">🚪</button>
     </div>
@@ -771,7 +771,7 @@
   <!-- RIGHT PANEL -->
   <div class="rp">
     <div class="rp-head">
-      <div class="rp-title">Minhas Sessões</div>
+      <div class="rp-title" id="rpTitle">Minhas Sessões</div>
       <div class="rp-sub" id="rpSub">–</div>
     </div>
     <div class="rp-body" id="rpBody"></div>
@@ -938,6 +938,7 @@
   //  STATE
   // ═══════════════════════════════
   let lawyerId = null;
+  let isAdmin = false;
   let lawyer = null;
   let attendance = {};
   let view = 'month';
@@ -959,9 +960,16 @@
     } else {
       const s = localStorage.getItem('qv_lawyer_id');
       if (!s) { showPicker(); return; }
-      lawyerId = parseInt(s);
+      if (s === 'admin') {
+        isAdmin = true;
+        lawyerId = 'admin';
+        lawyer = { id:'admin', nome:'Vorium', prio:'admin', prazo:'—', sessoes:[], roteiro:[], conteudos:[] };
+      } else {
+        lawyerId = parseInt(s);
+        lawyer = ADVS.find(a => a.id === lawyerId);
+      }
     }
-    lawyer = ADVS.find(a => a.id === lawyerId);
+    if (!isAdmin && !lawyer) { showPicker(); return; }
     loadAttendance();
     setWeekToday();
     renderHeader();
@@ -970,6 +978,8 @@
     renderRP();
     document.getElementById('loadingScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+    // Assiduidade visível apenas para admin
+    document.querySelector('.assi-panel').style.display = isAdmin ? '' : 'none';
   }
 
   function showPicker() {
@@ -980,6 +990,8 @@
         <div style="font-size:.8rem;color:var(--mu)">Selecione seu nome para entrar</div>
         <select class="picker-select" id="pick">
           <option value="">— Selecione seu nome —</option>
+          <option value="admin">⭐ Vorium (Administrador)</option>
+          <option disabled>──────────────────────</option>
           ${ADVS.map(a=>`<option value="${a.id}">${a.nome}</option>`).join('')}
         </select>
         <button class="picker-btn" onclick="confirmPick()">Entrar no Calendário →</button>
@@ -998,6 +1010,12 @@
   // ═══════════════════════════════
   function renderHeader() {
     if (!lawyer) return;
+    if (isAdmin) {
+      ['sidebarAv','topbarAv'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent='V'; });
+      document.getElementById('sidebarName').textContent = 'Vorium';
+      const role = document.getElementById('sidebarRole'); if(role) role.textContent = '⭐ Administrador';
+      return;
+    }
     const parts = lawyer.nome.split(' ');
     const init = parts.map(w=>w[0]).slice(0,2).join('');
     ['sidebarAv','topbarAv'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=init; });
@@ -1009,6 +1027,23 @@
   // ═══════════════════════════════
   function renderStats() {
     if (!lawyer) return;
+    if (isAdmin) {
+      let totalPres = 0, totalSlots = 0;
+      ADVS.forEach(a => {
+        const att = JSON.parse(localStorage.getItem('qv_att_'+a.id)||'{}');
+        const mySess = SESSOES.filter(s=>s.advs.includes(a.id));
+        totalSlots += mySess.length;
+        totalPres += mySess.filter(s=>att[s.id]==='presente').length;
+      });
+      const pct = totalSlots ? Math.round(totalPres/totalSlots*100) : 0;
+      document.getElementById('statsRow').innerHTML = `
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num">${ADVS.length}</div><div class="stat-label">Advogados</div></div>
+        <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-num">${SESSOES.length}</div><div class="stat-label">Sessões totais</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num">${totalPres}</div><div class="stat-label">Presenças confirmadas</div></div>
+        <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-num">${pct}%</div><div class="stat-label">Assiduidade geral</div></div>
+      `;
+      return;
+    }
     const mine = SESSOES.filter(s=>s.advs.includes(lawyerId));
     const pres = mine.filter(s=>attendance[s.id]==='presente').length;
     const prio = lawyer.prio === 'urgente' ? '🔴 Urgente' : lawyer.prio === 'alto' ? '🟡 Alta' : '🟢 Normal';
@@ -1105,7 +1140,7 @@
 
       let pills = sessions.map(s=>{
         const col = COLS[(s.id-1)%COLS.length];
-        const mine = s.advs.includes(lawyerId);
+        const mine = isAdmin || s.advs.includes(lawyerId);
         const pres = attendance[s.id];
         const icon = pres==='presente'?'✓':pres==='ausente'?'✗':'';
         return `<div class="ev-pill ${mine?'ev-mine':''}"
@@ -1159,7 +1194,7 @@
         let inner = '';
         if (sess && ti===1) { // 09:00
           const col = COLS[(sess.id-1)%COLS.length];
-          const mine = sess.advs.includes(lawyerId);
+          const mine = isAdmin || sess.advs.includes(lawyerId);
           const avs = sess.advs.slice(0,4).map(id=>{
             const a = ADVS.find(x=>x.id===id);
             const ini = a ? a.nome.split(' ').map(w=>w[0]).slice(0,2).join('') : '?';
@@ -1192,6 +1227,37 @@
   // ═══════════════════════════════
   function renderRP() {
     if (!lawyer) return;
+    if (isAdmin) {
+      document.getElementById('rpTitle').textContent = 'Visão Geral — Admin';
+      document.getElementById('rpSub').textContent = `${ADVS.length} advogados · ${SESSOES.length} sessões`;
+      let totalPres = 0, totalSlots = 0;
+      ADVS.forEach(a => {
+        const att = JSON.parse(localStorage.getItem('qv_att_'+a.id)||'{}');
+        const mySess = SESSOES.filter(s=>s.advs.includes(a.id));
+        totalSlots += mySess.length; totalPres += mySess.filter(s=>att[s.id]==='presente').length;
+      });
+      const pct = totalSlots ? Math.round(totalPres/totalSlots*100) : 0;
+      const circ = 138.2, offset = circ-(pct/100)*circ;
+      document.getElementById('assiPct').textContent = pct+'%';
+      document.getElementById('assiSub').textContent = `${totalPres} de ${totalSlots} slots`;
+      document.getElementById('assiRingText').textContent = pct+'%';
+      document.getElementById('assiRingFill').style.strokeDashoffset = offset;
+      document.getElementById('rpBody').innerHTML = ADVS.map((a,i) => {
+        const att = JSON.parse(localStorage.getItem('qv_att_'+a.id)||'{}');
+        const mySess = SESSOES.filter(s=>s.advs.includes(a.id));
+        const myPres = mySess.filter(s=>att[s.id]==='presente').length;
+        const myPct = mySess.length ? Math.round(myPres/mySess.length*100) : 0;
+        const col = COLS[i%COLS.length];
+        const badgeClass = myPct===100?'present':myPct>0?'pending':'absent';
+        const n = a.nome.split(' ');
+        return `<div class="rp-session mine" style="animation-delay:${i*.04}s;border-left-color:${col.bd}">
+          <div class="rps-date" style="color:${col.tx};font-weight:700">${n[0]} ${n[n.length-1]}</div>
+          <div class="rps-time">${mySess.length} sessões · ${myPres} presente(s)</div>
+          <div class="rps-badge ${badgeClass}">${myPct}% assiduo</div>
+        </div>`;
+      }).join('');
+      return;
+    }
     const mine = SESSOES.filter(s=>s.advs.includes(lawyerId));
     const pres = mine.filter(s=>attendance[s.id]==='presente').length;
     const pct = mine.length ? Math.round(pres/mine.length*100) : 0;
