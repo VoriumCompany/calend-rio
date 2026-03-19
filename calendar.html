@@ -807,7 +807,7 @@
     </div>
     <div class="modal-date" id="mDate"></div>
     <div class="modal-time" id="mTime"></div>
-    <div class="modal-slabel">Advogados nesta sessão</div>
+    <div class="modal-slabel">Advogado desta gravação</div>
     <div class="modal-advs" id="mAdvs"></div>
     <div id="mPres" style="display:none">
       <div class="modal-slabel">Sua presença nesta sessão</div>
@@ -865,62 +865,100 @@
   //  DATA
   // ═══════════════════════════════
   const ADVS = [
-    {id:1,  nome:'Leonardo Minuzzi',   tema:'Diesel sumiu no RS',               formato:'Testemunho',  dur:'60s',  prio:'urgente',prazo:'25/03',sessoes:[1,5],
+    {id:1,  nome:'Leonardo Minuzzi',   tema:'Diesel sumiu no RS: O que o produtor rural pode fazer?',   formato:'Solo falando', dur:'60s',  prio:'urgente',prazo:'23/03',sessoes:[1,17,33],
      roteiro:[{parte:'Abertura',txt:'Você sabia que o diesel do seu caminhão pode ter desaparecido por culpa de uma empresa?'},{parte:'Desenvolvimento',txt:'Eu sou Leonardo Minuzzi, advogado especialista em direito do transporte. Já atendi dezenas de caminhoneiros gaúchos que perderam combustível sem explicação — e conseguimos indenização para todos eles.'},{parte:'CTA',txt:'Se você passou por isso, me chama no direct agora. Eu analiso seu caso gratuitamente. Não deixa pra depois!'}],
      conteudos:[{n:1,tema:'Diesel sumiu — o que fazer?',tipo:'Reels',prazo:'25/03'},{n:2,tema:'Quem paga pelo combustível perdido?',tipo:'Carrossel',prazo:'28/03'}]},
-    {id:2,  nome:'Gedilson Jacobowski',tema:'Rescisão indireta — insalubre',    formato:'Educativo',  dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[1,6],
+    {id:2,  nome:'Gedilson Jacobowski',tema:'Portos travados por barreiras sanitárias: Como isso afeta o agro?', formato:'Entrevista Ravena', dur:'90s',  prio:'alto',   prazo:'24/03',sessoes:[2,18,34],
      roteiro:[{parte:'Abertura',txt:'Seu patrão te obriga a trabalhar em local perigoso sem equipamento adequado? Você pode pedir rescisão indireta!'},{parte:'Desenvolvimento',txt:'Sou Gedilson Jacobowski, advogado trabalhista. A rescisão indireta é como se o empregador fosse responsável pela saída — você recebe multa do FGTS, aviso prévio e tudo mais.'},{parte:'CTA',txt:'Comenta "RESCISÃO" aqui embaixo e eu te explico como funciona no seu caso!'}],
      conteudos:[{n:1,tema:'Rescisão indireta passo a passo',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Ambiente insalubre — seus direitos',tipo:'Carrossel',prazo:'30/03'}]},
-    {id:3,  nome:'Lucas Hank',         tema:'Dívida com banco — negociar',      formato:'Tutorial',   dur:'60s',  prio:'alto',   prazo:'30/03',sessoes:[1,7],
+    {id:3,  nome:'Lucas Hank',         tema:'Juros crédito rural a 13,5%: O que fazer agora?',          formato:'Solo falando', dur:'60s',  prio:'alto',   prazo:'25/03',sessoes:[3,19,35],
      roteiro:[{parte:'Abertura',txt:'Tá devendo pro banco e não sabe por onde começar? Eu vou te mostrar como negociar de forma inteligente!'},{parte:'Desenvolvimento',txt:'Sou Lucas Hank, advogado em direito do consumidor. A maioria das dívidas bancárias tem juros abusivos que podem ser contestados na Justiça.'},{parte:'CTA',txt:'Salva esse vídeo e me chama no direct para uma análise gratuita.'}],
      conteudos:[{n:1,tema:'Como negociar dívida bancária',tipo:'Reels',prazo:'30/03'},{n:2,tema:'Juros abusivos — como identificar',tipo:'Carrossel',prazo:'01/04'}]},
-    {id:4,  nome:'Carlos Alexandre',   tema:'Acidente de trabalho',             formato:'Testemunho', dur:'90s',  prio:'urgente',prazo:'25/03',sessoes:[1,8],
+    {id:4,  nome:'Carlos Alexandre',   tema:'Inadimplência rural 5,2%: Você faz parte desta estatística?', formato:'2 Advogados',  dur:'90s',  prio:'urgente',prazo:'26/03',sessoes:[4,20,36],
      roteiro:[{parte:'Abertura',txt:'Sofreu acidente no trabalho e a empresa não quer assumir? Você tem direito a muito mais do que imagina!'},{parte:'Desenvolvimento',txt:'Carlos Alexandre, especialista em acidentes de trabalho. Além do INSS, você pode receber indenização por danos morais, materiais e lucros cessantes.'},{parte:'CTA',txt:'Não assina nada sem falar comigo antes! Me chama agora no direct.'}],
      conteudos:[{n:1,tema:'Acidente de trabalho — primeiras 24h',tipo:'Reels',prazo:'25/03'},{n:2,tema:'Indenização além do INSS',tipo:'Carrossel',prazo:'28/03'}]},
-    {id:5,  nome:'Filipe Onofre',      tema:'Pensão alimentícia — revisão',     formato:'Educativo',  dur:'60s',  prio:'normal', prazo:'01/04',sessoes:[2,5],
+    {id:5,  nome:'Filipe Onofre',      tema:'CPR cresceu 39%: Risco ou oportunidade para o produtor?',    formato:'Solo falando', dur:'60s',  prio:'normal', prazo:'27/03',sessoes:[5,21,37],
      roteiro:[{parte:'Abertura',txt:'A pensão que você paga está te afogando? Saiba que ela pode ser revisada!'},{parte:'Desenvolvimento',txt:'Filipe Onofre, advogado de família. Quando muda sua renda ou a situação do filho, é possível pedir revisão judicial.'},{parte:'CTA',txt:'Comenta "PENSÃO" aqui embaixo para eu te mandar um guia gratuito!'}],
      conteudos:[{n:1,tema:'Revisão de pensão — quando é possível?',tipo:'Reels',prazo:'01/04'},{n:2,tema:'Mudança de renda e pensão',tipo:'Carrossel',prazo:'03/04'}]},
-    {id:6,  nome:'Jacqueline Grando',  tema:'Inventário sem brigas',            formato:'Educativo',  dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[2,6],
+    {id:6,  nome:'Jacqueline Grando',  tema:'Selic a 15%: Como isso impacta sua dívida rural?',           formato:'Entrevista Ravena', dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[6,22,38],
      roteiro:[{parte:'Abertura',txt:'Partilha de herança está virando guerra na família? Existe uma forma mais rápida e pacífica.'},{parte:'Desenvolvimento',txt:'Jacqueline Grando, advogada de direito sucessório. O inventário extrajudicial pode ser feito em cartório, em semanas.'},{parte:'CTA',txt:'Salva esse vídeo! E se precisar de ajuda, me manda mensagem.'}],
      conteudos:[{n:1,tema:'Inventário extrajudicial passo a passo',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Como dividir herança sem brigas',tipo:'Carrossel',prazo:'31/03'}]},
-    {id:7,  nome:'Anderson Comarella',tema:'Produto com defeito',               formato:'Tutorial',   dur:'60s',  prio:'normal', prazo:'01/04',sessoes:[2,7],
+    {id:7,  nome:'Anderson Comarella',tema:'Fertilizantes a US$ 344/ton: O produtor endividado tem saída?', formato:'Solo falando', dur:'60s',  prio:'normal', prazo:'29/03',sessoes:[7,23,39],
      roteiro:[{parte:'Abertura',txt:'Comprou um produto e veio com defeito? A loja se recusa a trocar? Isso é crime!'},{parte:'Desenvolvimento',txt:'Anderson Comarella, advogado do consumidor. O CDC garante troca, reparo ou devolução — e se não cumprir, você pode pedir danos morais.'},{parte:'CTA',txt:'Comenta "DEFEITO" aqui que eu te ajudo a resolver hoje!'}],
      conteudos:[{n:1,tema:'Produto com defeito — seus direitos',tipo:'Reels',prazo:'01/04'},{n:2,tema:'Como reclamar no Procon e vencer',tipo:'Carrossel',prazo:'04/04'}]},
-    {id:8,  nome:'Thaimmylly Alves',  tema:'Violência doméstica',              formato:'Informativo',dur:'90s',  prio:'urgente',prazo:'20/03',sessoes:[2,8],
+    {id:8,  nome:'Thaimmylly Alves',  tema:'Clima irregular no MS: Como proteger sua fazenda juridicamente?', formato:'2 Advogados',  dur:'90s',  prio:'urgente',prazo:'30/03',sessoes:[8,24],
      roteiro:[{parte:'Abertura',txt:'Se você ou alguém que você conhece está sofrendo violência em casa, ESTE VÍDEO É URGENTE.'},{parte:'Desenvolvimento',txt:'Thaimmylly Alves, advogada especialista em violência doméstica. A medida protetiva pode ser concedida em 48 horas.'},{parte:'CTA',txt:'Salva esse vídeo. Liga 180 agora ou me chama que eu te ajudo a dar o primeiro passo.'}],
      conteudos:[{n:1,tema:'Medida protetiva — como pedir em 48h',tipo:'Reels',prazo:'20/03'},{n:2,tema:'O que fazer ao sofrer violência doméstica',tipo:'Carrossel',prazo:'22/03'}]},
-    {id:9,  nome:'Samuel Gripp',      tema:'Usucapião — regularizar imóvel',   formato:'Tutorial',   dur:'60s',  prio:'normal', prazo:'05/04',sessoes:[3,5],
+    {id:9,  nome:'Samuel Gripp',      tema:'4 erros comuns do produtor endividado (e como evitar)',      formato:'Solo falando', dur:'60s',  prio:'normal', prazo:'31/03',sessoes:[9,25],
      roteiro:[{parte:'Abertura',txt:'Mora num imóvel há anos mas não tem escritura? Você pode se tornar o dono legal!'},{parte:'Desenvolvimento',txt:'Samuel Gripp, advogado imobiliário. A usucapião permite que quem mora e cuida do imóvel consiga a propriedade na Justiça.'},{parte:'CTA',txt:'Me manda "USUCAPIÃO" no direct para entender se você tem direito!'}],
      conteudos:[{n:1,tema:'Usucapião — quem tem direito?',tipo:'Reels',prazo:'05/04'},{n:2,tema:'Regularizar imóvel sem escritura',tipo:'Carrossel',prazo:'07/04'}]},
-    {id:10, nome:'Fernanda Miotto',   tema:'Guarda compartilhada',             formato:'Educativo',  dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[3,6],
+    {id:10, nome:'Fernanda Miotto',   tema:'5 dicas para proteger sua propriedade rural',               formato:'Solo falando', dur:'90s',  prio:'alto',   prazo:'01/04',sessoes:[10,26],
      roteiro:[{parte:'Abertura',txt:'Separou e não sabe como vai funcionar a guarda dos filhos? Eu vou te explicar tudo!'},{parte:'Desenvolvimento',txt:'Fernanda Miotto, advogada de família. A guarda compartilhada é a regra no Brasil — os dois pais participam das decisões.'},{parte:'CTA',txt:'Comenta "GUARDA" aqui embaixo para eu te mandar um material completo!'}],
      conteudos:[{n:1,tema:'Guarda compartilhada na prática',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Guarda vs. custódia',tipo:'Carrossel',prazo:'30/03'}]},
-    {id:11, nome:'Juliana Passarine', tema:'Aposentadoria especial',           formato:'Informativo',dur:'60s',  prio:'alto',   prazo:'30/03',sessoes:[3,7],
+    {id:11, nome:'Juliana Passarine', tema:'3 coisas que o banco não te conta sobre sua dívida',        formato:'Entrevista Ravena', dur:'60s',  prio:'alto',   prazo:'02/04',sessoes:[11,27],
      roteiro:[{parte:'Abertura',txt:'Você trabalha exposto a agentes nocivos? Saiba que pode se aposentar mais cedo!'},{parte:'Desenvolvimento',txt:'Juliana Passarine, advogada previdenciária. A aposentadoria especial reduz o tempo de contribuição para 15, 20 ou 25 anos.'},{parte:'CTA',txt:'Comenta "ESPECIAL" aqui para eu verificar se você tem direito!'}],
      conteudos:[{n:1,tema:'Aposentadoria especial — tempo e requisitos',tipo:'Reels',prazo:'30/03'},{n:2,tema:'Atividades com direito à apos. especial',tipo:'Carrossel',prazo:'01/04'}]},
-    {id:12, nome:'Samara Rambo',      tema:'Nome sujo indevido',               formato:'Tutorial',   dur:'60s',  prio:'urgente',prazo:'22/03',sessoes:[3,8],
+    {id:12, nome:'Samara Rambo',      tema:'5 sinais de que você precisa prorrogar agora',              formato:'Solo falando', dur:'60s',  prio:'urgente',prazo:'03/04',sessoes:[12,28],
      roteiro:[{parte:'Abertura',txt:'Seu nome foi negativado por uma dívida que não é sua? Isso é erro e você tem direito a indenização!'},{parte:'Desenvolvimento',txt:'Samara Rambo, advogada do consumidor. Negativação indevida gera danos morais — indenizações de R$3.000 a R$15.000.'},{parte:'CTA',txt:'Me chama agora! Analiso seu caso gratuitamente em minutos.'}],
      conteudos:[{n:1,tema:'Nome sujo indevido — o que fazer agora',tipo:'Reels',prazo:'22/03'},{n:2,tema:'Quanto você pode receber de indenização',tipo:'Carrossel',prazo:'25/03'}]},
-    {id:13, nome:'Rafaela Ebert',     tema:'Assédio moral no trabalho',        formato:'Informativo',dur:'90s',  prio:'alto',   prazo:'28/03',sessoes:[4,5],
+    {id:13, nome:'Rafaela Ebert',     tema:'5 cláusulas abusivas em contratos rurais',                  formato:'Solo falando', dur:'90s',  prio:'alto',   prazo:'04/04',sessoes:[13,29],
      roteiro:[{parte:'Abertura',txt:'Seu chefe te humilha na frente dos outros? Isso é assédio moral e é crime!'},{parte:'Desenvolvimento',txt:'Rafaela Ebert, advogada trabalhista. O assédio moral dá direito a danos morais e pode resultar em rescisão indireta.'},{parte:'CTA',txt:'Salva esse vídeo e me chama no direct. Primeira consulta gratuita!'}],
      conteudos:[{n:1,tema:'Como provar assédio moral',tipo:'Reels',prazo:'28/03'},{n:2,tema:'Assédio moral — valores de indenização',tipo:'Carrossel',prazo:'30/03'}]},
-    {id:14, nome:'Marcos Pizatto',    tema:'Consórcio cancelado',              formato:'Tutorial',   dur:'60s',  prio:'normal', prazo:'05/04',sessoes:[4,6],
+    {id:14, nome:'Marcos Pizatto',    tema:'Defesa preventiva: quando fazer antes de ser cobrado',      formato:'2 Advogados',  dur:'60s',  prio:'normal', prazo:'05/04',sessoes:[14,30],
      roteiro:[{parte:'Abertura',txt:'Pagou meses de consórcio, cancelou e a administradora está enrolando? Eu sei o que fazer!'},{parte:'Desenvolvimento',txt:'Marcos Pizatto, advogado do consumidor. A lei define prazo máximo para devolução — se descumprir, você exige correção mais indenização.'},{parte:'CTA',txt:'Comenta "CONSÓRCIO" aqui e te explico como agir!'}],
      conteudos:[{n:1,tema:'Consórcio cancelado — como reaver seu dinheiro',tipo:'Reels',prazo:'05/04'},{n:2,tema:'Prazo legal para devolução do consórcio',tipo:'Carrossel',prazo:'07/04'}]},
-    {id:15, nome:'Rayka Passarini',   tema:'Direito digital — perfil hackeado',formato:'Informativo',dur:'60s',  prio:'alto',   prazo:'30/03',sessoes:[4,7],
+    {id:15, nome:'Rayka Passarini',   tema:'Renegociar vs Prorrogar: entenda a diferença definitivamente',formato:'Solo falando', dur:'60s',  prio:'alto',   prazo:'06/04',sessoes:[15,31],
      roteiro:[{parte:'Abertura',txt:'Usaram sua imagem sem permissão ou te difamaram na internet? Isso é crime!'},{parte:'Desenvolvimento',txt:'Rayka Passarini, advogada em direito digital. Podemos registrar BO digital, solicitar remoção de conteúdo e pedir indenização.'},{parte:'CTA',txt:'Me chama no direct agora! Quanto antes agir, mais fácil resolver.'}],
-     conteudos:[{n:1,tema:'Perfil hackeado — o que fazer nas primeiras horas',tipo:'Reels',prazo:'30/03'},{n:2,tema:'Crimes digitais e como se proteger',tipo:'Carrossel',prazo:'02/04'}]},
+     conteudos:[{n:1,tema:'Renegociar vs Prorrogar — qual escolher?',tipo:'Reels',prazo:'06/04'},{n:2,tema:'Quando a renegociação piora a dívida',tipo:'Carrossel',prazo:'10/04'}]},
+    {id:16, nome:'João Queiroz',      tema:'Como funciona a Justiça Gratuita para produtor rural',       formato:'Entrevista Ravena', dur:'60s',  prio:'urgente',prazo:'07/04',sessoes:[16,32],
+     roteiro:[{parte:'Abertura',txt:'Você sabia que o produtor rural pode ter acesso gratuito à Justiça? Isso pode mudar tudo na sua defesa!'},{parte:'Desenvolvimento',txt:'Sou João Queiroz, advogado rural especialista em defesa do produtor endividado. A Justiça Gratuita elimina custas processuais e permite que qualquer produtor acesse seus direitos.'},{parte:'CTA',txt:'Me chama agora e descubra se você tem direito à Justiça Gratuita. É rápido e gratuito!'}],
+     conteudos:[{n:1,tema:'Justiça Gratuita para produtor rural — como funciona',tipo:'Reels',prazo:'07/04'},{n:2,tema:'Seguro rural: direito mesmo sem contratar?',tipo:'Carrossel',prazo:'23/04'}]},
   ];
 
   const SESSOES = [
-    {id:1,dataStr:'19/03/2025',date:new Date(2025,2,19),hora:'09:00–10:30',advs:[1,2,3,4]},
-    {id:2,dataStr:'21/03/2025',date:new Date(2025,2,21),hora:'09:00–10:30',advs:[5,6,7,8]},
-    {id:3,dataStr:'24/03/2025',date:new Date(2025,2,24),hora:'09:00–10:30',advs:[9,10,11,12]},
-    {id:4,dataStr:'26/03/2025',date:new Date(2025,2,26),hora:'09:00–10:30',advs:[13,14,15,1]},
-    {id:5,dataStr:'02/04/2025',date:new Date(2025,3,2), hora:'09:00–10:30',advs:[1,5,9,13]},
-    {id:6,dataStr:'04/04/2025',date:new Date(2025,3,4), hora:'09:00–10:30',advs:[2,6,10,14]},
-    {id:7,dataStr:'07/04/2025',date:new Date(2025,3,7), hora:'09:00–10:30',advs:[3,7,11,15]},
-    {id:8,dataStr:'09/04/2025',date:new Date(2025,3,9), hora:'09:00–10:30',advs:[4,8,12,1]},
+    // ══ MARÇO — CICLO 1 (Notícias Urgentes) ══
+    {id:1, dataStr:'23/03/2026',date:new Date(2026,2,23),hora:'09:00–10:00',advs:[1],  conteudo:'Diesel sumiu no RS: O que o produtor rural pode fazer?'},
+    {id:2, dataStr:'24/03/2026',date:new Date(2026,2,24),hora:'09:00–10:00',advs:[2],  conteudo:'Portos travados por barreiras sanitárias: Como isso afeta o agro?'},
+    {id:3, dataStr:'25/03/2026',date:new Date(2026,2,25),hora:'09:00–10:00',advs:[3],  conteudo:'Juros crédito rural a 13,5%: O que fazer agora?'},
+    {id:4, dataStr:'26/03/2026',date:new Date(2026,2,26),hora:'09:00–10:00',advs:[4],  conteudo:'Inadimplência rural 5,2%: Você faz parte desta estatística?'},
+    {id:5, dataStr:'27/03/2026',date:new Date(2026,2,27),hora:'09:00–10:00',advs:[5],  conteudo:'CPR cresceu 39%: Risco ou oportunidade para o produtor?'},
+    {id:6, dataStr:'28/03/2026',date:new Date(2026,2,28),hora:'09:00–10:00',advs:[6],  conteudo:'Selic a 15%: Como isso impacta sua dívida rural?'},
+    {id:7, dataStr:'29/03/2026',date:new Date(2026,2,29),hora:'09:00–10:00',advs:[7],  conteudo:'Fertilizantes a US$ 344/ton: O produtor endividado tem saída?'},
+    {id:8, dataStr:'30/03/2026',date:new Date(2026,2,30),hora:'09:00–10:00',advs:[8],  conteudo:'Clima irregular no MS: Como proteger sua fazenda juridicamente?'},
+    {id:9, dataStr:'31/03/2026',date:new Date(2026,2,31),hora:'09:00–10:00',advs:[9],  conteudo:'4 erros comuns do produtor endividado (e como evitar)'},
+    // ══ ABRIL — CICLO 1 (Dicas + Educativo) ══
+    {id:10,dataStr:'01/04/2026',date:new Date(2026,3,1), hora:'09:00–10:00',advs:[10], conteudo:'5 dicas para proteger sua propriedade rural'},
+    {id:11,dataStr:'02/04/2026',date:new Date(2026,3,2), hora:'09:00–10:00',advs:[11], conteudo:'3 coisas que o banco não te conta sobre sua dívida'},
+    {id:12,dataStr:'03/04/2026',date:new Date(2026,3,3), hora:'09:00–10:00',advs:[12], conteudo:'5 sinais de que você precisa prorrogar agora'},
+    {id:13,dataStr:'04/04/2026',date:new Date(2026,3,4), hora:'09:00–10:00',advs:[13], conteudo:'5 cláusulas abusivas em contratos rurais'},
+    {id:14,dataStr:'05/04/2026',date:new Date(2026,3,5), hora:'09:00–10:00',advs:[14], conteudo:'Defesa preventiva: quando fazer antes de ser cobrado'},
+    {id:15,dataStr:'06/04/2026',date:new Date(2026,3,6), hora:'09:00–10:00',advs:[15], conteudo:'Renegociar vs Prorrogar: entenda a diferença definitivamente'},
+    {id:16,dataStr:'07/04/2026',date:new Date(2026,3,7), hora:'09:00–10:00',advs:[16], conteudo:'Como funciona a Justiça Gratuita para produtor rural'},
+    // ══ ABRIL — CICLO 2 (Educativo) ══
+    {id:17,dataStr:'08/04/2026',date:new Date(2026,3,8), hora:'09:00–10:00',advs:[1],  conteudo:'Documentos necessários para montar sua defesa rural'},
+    {id:18,dataStr:'09/04/2026',date:new Date(2026,3,9), hora:'09:00–10:00',advs:[2],  conteudo:'Diferença entre execução de dívida e prorrogação'},
+    {id:19,dataStr:'10/04/2026',date:new Date(2026,3,10),hora:'09:00–10:00',advs:[3],  conteudo:'Como suspender o leilão da sua propriedade'},
+    {id:20,dataStr:'11/04/2026',date:new Date(2026,3,11),hora:'09:00–10:00',advs:[4],  conteudo:'Por que o avalista também é protegido pela lei'},
+    {id:21,dataStr:'12/04/2026',date:new Date(2026,3,12),hora:'09:00–10:00',advs:[5],  conteudo:'Safra frustrada dá direito a quê? A lei explica'},
+    {id:22,dataStr:'13/04/2026',date:new Date(2026,3,13),hora:'09:00–10:00',advs:[6],  conteudo:'Quanto tempo tenho antes do leilão começar?'},
+    {id:23,dataStr:'14/04/2026',date:new Date(2026,3,14),hora:'09:00–10:00',advs:[7],  conteudo:'Banco pode tomar maquinário? Entenda seus direitos'},
+    {id:24,dataStr:'15/04/2026',date:new Date(2026,3,15),hora:'09:00–10:00',advs:[8],  conteudo:'Como calcular a capacidade real de pagamento'},
+    {id:25,dataStr:'16/04/2026',date:new Date(2026,3,16),hora:'09:00–10:00',advs:[9],  conteudo:'3 tipos de garantia que o banco exige e o que cada uma significa'},
+    {id:26,dataStr:'17/04/2026',date:new Date(2026,3,17),hora:'09:00–10:00',advs:[10], conteudo:'Posso plantar com dívida vencida? Resposta jurídica'},
+    {id:27,dataStr:'18/04/2026',date:new Date(2026,3,18),hora:'09:00–10:00',advs:[11], conteudo:'3 mitos sobre dívida rural que você acredita (e que são mentira)'},
+    {id:28,dataStr:'19/04/2026',date:new Date(2026,3,19),hora:'09:00–10:00',advs:[12], conteudo:'Por que renegociação sem advogado piora sua dívida'},
+    {id:29,dataStr:'20/04/2026',date:new Date(2026,3,20),hora:'09:00–10:00',advs:[13], conteudo:'O que é PRONAMP e como pode te ajudar?'},
+    {id:30,dataStr:'21/04/2026',date:new Date(2026,3,21),hora:'09:00–10:00',advs:[14], conteudo:'Parcelamento especial rural: como funciona e quem pode usar'},
+    {id:31,dataStr:'22/04/2026',date:new Date(2026,3,22),hora:'09:00–10:00',advs:[15], conteudo:'Quando vale a pena ir à Justiça contra o banco?'},
+    {id:32,dataStr:'23/04/2026',date:new Date(2026,3,23),hora:'09:00–10:00',advs:[16], conteudo:'Seguro rural: o produtor tem esse direito mesmo sem contratar?'},
+    // ══ ABRIL — CICLO 3 (Parcial) ══
+    {id:33,dataStr:'24/04/2026',date:new Date(2026,3,24),hora:'09:00–10:00',advs:[1],  conteudo:'Como a lei de Zoneamento Agrícola pode proteger sua propriedade'},
+    {id:34,dataStr:'25/04/2026',date:new Date(2026,3,25),hora:'09:00–10:00',advs:[2],  conteudo:'5 perguntas que todo produtor deve fazer ao banco antes de assinar'},
+    {id:35,dataStr:'26/04/2026',date:new Date(2026,3,26),hora:'09:00–10:00',advs:[3],  conteudo:'O que acontece se eu ignorar a cobrança do banco?'},
+    {id:36,dataStr:'27/04/2026',date:new Date(2026,3,27),hora:'09:00–10:00',advs:[4],  conteudo:'Como funciona a penhora de safra futura'},
+    {id:37,dataStr:'28/04/2026',date:new Date(2026,3,28),hora:'09:00–10:00',advs:[5],  conteudo:'Direito ao contraditório: como usar a seu favor na Justiça'},
+    {id:38,dataStr:'29/04/2026',date:new Date(2026,3,29),hora:'09:00–10:00',advs:[6],  conteudo:'Como reunir provas para construir sua defesa rural'},
+    {id:39,dataStr:'30/04/2026',date:new Date(2026,3,30),hora:'09:00–10:00',advs:[7],  conteudo:'Próximos passos: quando e como contratar um advogado rural'},
   ];
 
   const COLS = [
@@ -1206,7 +1244,7 @@
             style="background:${col.bg};border-left-color:${col.bd}"
             onclick="openSession(${sess.id})">
             <div class="we-code" style="color:${col.bd}">#S${String(sess.id).padStart(3,'0')}${icon}</div>
-            <div class="we-title" style="color:${col.tx}">📹 Gravação</div>
+            <div class="we-title" style="color:${col.tx}">${(sess.conteudo||'Gravação').slice(0,38)}…</div>
             <div class="we-time" style="color:${col.bd}">${sess.hora}</div>
             <div class="we-avs">${avs}</div>
           </div>`;
@@ -1296,9 +1334,9 @@
     const mine = s.advs.includes(lawyerId);
     const col = COLS[(s.id-1)%COLS.length];
 
-    document.getElementById('mTitle').textContent = `Sessão #S${String(id).padStart(3,'0')}`;
-    document.getElementById('mDate').textContent = `📅 ${s.dataStr}  ·  Gravação de Stories`;
-    document.getElementById('mTime').textContent = s.hora;
+    document.getElementById('mTitle').textContent = s.conteudo || `Sessão #S${String(id).padStart(3,'0')}`;
+    document.getElementById('mDate').textContent = `📅 ${s.dataStr}  ·  #S${String(id).padStart(3,'0')}`;
+    document.getElementById('mTime').textContent = `🕘 ${s.hora}  ·  🎬 Gravação de Conteúdo`;
 
     document.getElementById('mAdvs').innerHTML = s.advs.map(aid=>{
       const a = ADVS.find(x=>x.id===aid);
