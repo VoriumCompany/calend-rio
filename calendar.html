@@ -1534,9 +1534,9 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
         const adv = ADVS.find(x=>x.id===s.advs[0]);
         const nome = adv ? adv.nome.split(' ')[0] : `S${s.id}`;
         return `<div class="ev-pill ${mine?'ev-mine':''}"
-          style="background:${col.bg};border-left-color:${col.bd};color:${col.tx}"
+          style="background:var(--pg);border-left-color:var(--p);color:var(--pl)"
           onclick="openSession(${s.id})">
-          <div class="ev-dot" style="background:${col.bd}"></div>
+          <div class="ev-dot" style="background:var(--p)"></div>
           ${nome}${icon}
         </div>`;
       }).join('');
@@ -1588,16 +1588,16 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
           const avs = sess.advs.slice(0,4).map(id=>{
             const a = ADVS.find(x=>x.id===id);
             const ini = a ? a.nome.split(' ').map(w=>w[0]).slice(0,2).join('') : '?';
-            return `<div class="we-av" style="background:${id===lawyerId?col.bd:col.av};opacity:${id===lawyerId?1:.65}">${ini}</div>`;
+            return `<div class="we-av" style="background:${id===lawyerId?'var(--p)':'rgba(42,126,120,.4)'};opacity:${id===lawyerId?1:.7}">${ini}</div>`;
           }).join('');
           const pres = attendance[sess.id];
           const icon = pres==='presente'?' ✓':pres==='ausente'?' ✗':'';
           inner = `<div class="week-event ${mine?'mine':''}"
-            style="background:${col.bg};border-left-color:${col.bd}"
+            style="background:var(--pg);border-left-color:var(--p)"
             onclick="openSession(${sess.id})">
-            <div class="we-code" style="color:${col.bd}">#S${String(sess.id).padStart(3,'0')}${icon}</div>
-            <div class="we-title" style="color:${col.tx}">${(sess.conteudo||'Gravação').slice(0,38)}…</div>
-            <div class="we-time" style="color:${col.bd}">${sess.hora}</div>
+            <div class="we-code" style="color:var(--p)">#S${String(sess.id).padStart(3,'0')}${icon}</div>
+            <div class="we-title" style="color:var(--pl)">${(sess.conteudo||'Gravação').slice(0,38)}…</div>
+            <div class="we-time" style="color:var(--p)">${sess.hora}</div>
             <div class="we-avs">${avs}</div>
           </div>`;
         }
@@ -1640,8 +1640,8 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
         const col = COLS[i%COLS.length];
         const badgeClass = myPct===100?'present':myPct>0?'pending':'absent';
         const n = a.nome.split(' ');
-        return `<div class="rp-session mine" style="animation-delay:${i*.04}s;border-left-color:${col.bd}">
-          <div class="rps-date" style="color:${col.tx};font-weight:700">${n[0]} ${n[n.length-1]}</div>
+        return `<div class="rp-session mine" style="animation-delay:${i*.04}s;border-left-color:var(--p)">
+          <div class="rps-date" style="color:var(--pl);font-weight:700">${n[0]} ${n[n.length-1]}</div>
           <div class="rps-time">${mySess.length} sessões · ${myPres} presente(s)</div>
           <div class="rps-badge ${badgeClass}">${myPct}% assiduo</div>
         </div>`;
@@ -1667,7 +1667,7 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
         : st==='ausente' ? '<div class="rps-badge absent">✗ Ausente</div>'
         : '<div class="rps-badge pending">— Pendente</div>';
       return `<div class="rp-session mine" onclick="openSession(${s.id})"
-        style="animation-delay:${i*.06}s;border-left-color:${col.bd}">
+        style="animation-delay:${i*.06}s;border-left-color:var(--p)">
         <div class="rps-date">📅 ${s.dataStr}</div>
         <div class="rps-time">🎬 ${s.hora}</div>
         <div class="rps-names">Com: ${others||'—'}</div>
@@ -1704,7 +1704,7 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
       const ini = a ? a.nome.split(' ').map(w=>w[0]).slice(0,2).join('') : '?';
       const isMe = aid===lawyerId;
       return `<div class="modal-adv ${isMe?'me':''}">
-        <div class="modal-adv-av" style="background:${isMe?col.bd:col.av}">${ini}</div>
+        <div class="modal-adv-av" style="background:${isMe?'var(--p)':'rgba(42,126,120,.4)'}">${ini}</div>
         <div class="modal-adv-name">${a?a.nome:'?'}</div>
         ${isMe?'<div class="modal-adv-you">Você</div>':''}
       </div>`;
@@ -1810,8 +1810,8 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
     if (!lawyer?.conteudos) return;
     document.getElementById('mContContent').innerHTML = lawyer.conteudos.map((c,i)=>{
       const col = COLS[i%COLS.length];
-      return `<div style="padding:1rem;border-radius:12px;border:1px solid var(--bd);background:var(--s2);margin-bottom:.75rem;border-left:2.5px solid ${col.bd}">
-        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:${col.bd};margin-bottom:.35rem">Conteúdo ${c.n}</div>
+      return `<div style="padding:1rem;border-radius:12px;border:1px solid var(--bd);background:var(--s2);margin-bottom:.75rem;border-left:2.5px solid var(--p)">
+        <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--p);margin-bottom:.35rem">Conteúdo ${c.n}</div>
         <div style="font-size:.92rem;font-weight:800;margin-bottom:.5rem">${c.tema}</div>
         <div style="display:flex;gap:.4rem">
           <span style="padding:.2rem .55rem;border-radius:99px;font-size:.7rem;font-weight:700;background:rgba(255,255,255,.05);color:var(--mu)">${c.tipo}</span>
