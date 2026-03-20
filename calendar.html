@@ -1534,7 +1534,7 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
         const adv = ADVS.find(x=>x.id===s.advs[0]);
         const nome = adv ? adv.nome.split(' ')[0] : `S${s.id}`;
         return `<div class="ev-pill ${mine?'ev-mine':''}"
-          style="background:var(--pg);border-left-color:var(--p);color:var(--pl)"
+          style="background:var(--pg);border-left-color:var(--p);color:#2A7E78"
           onclick="openSession(${s.id})">
           <div class="ev-dot" style="background:var(--p)"></div>
           ${nome}${icon}
@@ -1596,7 +1596,7 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
             style="background:var(--pg);border-left-color:var(--p)"
             onclick="openSession(${sess.id})">
             <div class="we-code" style="color:var(--p)">#S${String(sess.id).padStart(3,'0')}${icon}</div>
-            <div class="we-title" style="color:var(--pl)">${(sess.conteudo||'Gravação').slice(0,38)}…</div>
+            <div class="we-title" style="color:#2A7E78">${(sess.conteudo||'Gravação').slice(0,38)}…</div>
             <div class="we-time" style="color:var(--p)">${sess.hora}</div>
             <div class="we-avs">${avs}</div>
           </div>`;
@@ -1641,7 +1641,7 @@ Seja direto, amigável e confirme o que foi alterado. Responda em português.`;
         const badgeClass = myPct===100?'present':myPct>0?'pending':'absent';
         const n = a.nome.split(' ');
         return `<div class="rp-session mine" style="animation-delay:${i*.04}s;border-left-color:var(--p)">
-          <div class="rps-date" style="color:var(--pl);font-weight:700">${n[0]} ${n[n.length-1]}</div>
+          <div class="rps-date" style="color:#2A7E78;font-weight:700">${n[0]} ${n[n.length-1]}</div>
           <div class="rps-time">${mySess.length} sessões · ${myPres} presente(s)</div>
           <div class="rps-badge ${badgeClass}">${myPct}% assiduo</div>
         </div>`;
